@@ -167,10 +167,7 @@ export class DrawBoard {
   /**
    * undo
    */
-  public undo() {
-    if (this._historyCurrentIndex >= 0) {
-      this._historyCurrentIndex -= 1;
-    }
+  private replay() {
     const ctx = this._canvas.getContext("2d");
     if (ctx) {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -179,6 +176,16 @@ export class DrawBoard {
         command.execute(ctx);
       }
     }
+  }
+
+  /**
+   * undo
+   */
+  public undo() {
+    if (this._historyCurrentIndex >= 0) {
+      this._historyCurrentIndex -= 1;
+    }
+    this.replay();
     this._cmdUndo.disabled = this._historyCurrentIndex <= -1;
     this._cmdRedo.disabled = false;
   }
@@ -190,14 +197,7 @@ export class DrawBoard {
     if (this._historyCurrentIndex < this._history.length) {
       this._historyCurrentIndex += 1;
     }
-    const ctx = this._canvas.getContext("2d");
-    if (ctx) {
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      for (let i = 0; i <= this._historyCurrentIndex; ++i) {
-        const command = this._history[i];
-        command.execute(ctx);
-      }
-    }
+    this.replay();
     this._cmdUndo.disabled = false;
     this._cmdRedo.disabled =
       this._historyCurrentIndex + 1 >= this._history.length;
@@ -337,6 +337,19 @@ export class DrawBoard {
     this._canvas.onpointermove = this.processPointerMoving.bind(this);
     this._canvas.onpointerleave = this.processPointerEnd.bind(this);
     this._canvas.onpointerup = this.processPointerEnd.bind(this);
+
+    const drawboardWrapper = document.querySelector(
+      ".drawboard-wrapper"
+    ) as HTMLDivElement;
+
+    window.addEventListener("resize", () => {
+      const ctx = this._canvas.getContext("2d");
+      this._canvas.width = Math.max(
+        this._canvas.width,
+        drawboardWrapper.clientWidth
+      );
+      this.replay();
+    });
   }
 
   private processPointerBegin(ev: PointerEvent) {
