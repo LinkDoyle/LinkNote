@@ -4,6 +4,7 @@ h1 {
 
 .container {
   display: flex;
+  align-items: stretch;
 }
 
 .container > .sidebar {
@@ -43,6 +44,8 @@ h1 {
   background-color: violet;
 }
 
-.container > .content {
-  flex: 2 1 auto;
+.content-container {
+  width: 0;
+  flex-grow: 1;
+  flex-shrink: 1;
 }

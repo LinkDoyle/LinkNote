@@ -10,12 +10,17 @@
     <div class="container">
       <nav class="sidebar">
         <ul>
-          <li class="sidebar-link"><a href="javascript:void(0)">DrawBoard</a></li>
-          <li class="sidebar-link"><a href="javascript:void(0)">NoteEditor</a></li>
+          <li id="sidebar-drawboard" class="sidebar-link">
+            <a href="javascript:void(0)">DrawBoard</a>
+          </li>
+          <li id="sidebar-editor" class="sidebar-link">
+            <a href="javascript:void(0)">NoteEditor</a>
+          </li>
         </ul>
       </nav>
-      <div class="content">
-        <div id="draw-board"></div>
+      <div class="content-container">
+        <div class="content" id="content-drawboard"></div>
+        <div class="content" id="content-editor" style="display: none;"></div>
       </div>
     </div>
   </body>
