@@ -1,0 +1,14 @@
+.drawboard-container .drawboard-toolbar {
+  border: 1px solid purple;
+  touch-action: none;
+}
+
+.drawboard-container .drawboard-wrapper {
+  border: 1px solid purple;
+  touch-action: none;
+  overflow: scroll;
+}
+
+.drawboard-container canvas {
+  touch-action: none;
+}
