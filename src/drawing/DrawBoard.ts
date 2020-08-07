@@ -264,7 +264,7 @@ export class DrawBoard {
   }
 
   /**
-   * @param canvasId canvas id
+   * @param container container to host `DrawBoard`
    */
   constructor(container: Element) {
     this._isDrawing = false;
