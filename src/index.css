@@ -1,3 +1,48 @@
 h1 {
   color: rebeccapurple;
 }
+
+.container {
+  display: flex;
+}
+
+.container > .sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 160px;
+  border-color: purple;
+  border-style: solid;
+  border-width: 1px 0 1px 1px;
+}
+
+.container > .sidebar ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.container > .sidebar :link,
+.container > .sidebar :visited {
+  text-decoration: none;
+  color: purple;
+}
+
+.container .sidebar-link {
+  border-width: 1px 0 0 0;
+  border-style: solid;
+  border-color: purple;
+}
+
+.container .sidebar-link:last-child {
+  border-width: 1px 0 1px 0;
+}
+
+.container .sidebar-link:hover {
+  background-color: violet;
+}
+
+.container > .content {
+  flex: 2 1 auto;
+}
