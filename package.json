@@ -4,6 +4,7 @@
   "description": "Yet another note.",
   "author": "Link Doyle",
   "license": "MIT",
+  "repository": "https://github.com/LinkDoyle/LinkNote",
   "main": "index.js",
   "scripts": {
     "start": "webpack-dev-server --open",
