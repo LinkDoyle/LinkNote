@@ -277,7 +277,7 @@ export class DrawBoard {
       throw Error("Failed to parse DrawBoard template.");
     }
     this._container = template.content.firstElementChild;
-    container.replaceWith(this._container);
+    container.appendChild(this._container);
     container = this._container;
 
     this._cmdPen = container.querySelector(
