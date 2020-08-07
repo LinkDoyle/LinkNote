@@ -33,6 +33,7 @@ module.exports = {
       title: "LinkNote(dev)",
       filename: "index.html",
       template: "src/index.html",
+      inject: "head"
     }),
   ],
   output: {
