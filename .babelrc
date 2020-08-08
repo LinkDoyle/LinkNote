@@ -3,5 +3,13 @@
     "@babel/preset-env",
     ["@babel/preset-typescript", { "allowNamespaces": true }]
   ],
-  "plugins": ["@babel/plugin-proposal-class-properties"]
+  "plugins": [
+    [
+      "@babel/plugin-transform-react-jsx",
+      {
+        "pragma": "Wenny"
+      }
+    ],
+    "@babel/plugin-proposal-class-properties"
+  ]
 }
