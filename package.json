@@ -15,7 +15,8 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:js": "babel src --out-dir build --extensions \".ts,.tsx\" --source-maps inline",
     "webpack": "npx webpack",
-    "webpack:watch": "npx webpack --watch"
+    "webpack:watch": "npx webpack --watch",
+    "publish": "npx webpack --mode=production"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.5",
