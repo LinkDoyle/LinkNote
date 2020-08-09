@@ -1,8 +1,26 @@
 .editor-container {
+  position: relative;
   color: purple;
   border-color: purple;
   border-style: solid;
   border-width: 1px 1px 1px 1px;
   padding: 5px;
   height: 800px;
+}
+
+.editor-line-number {
+  position: absolute;
+  width: 50px;
+  height: 100%;
+  text-align: right;
+}
+
+.editor-content {
+  position: absolute;
+  left: 71px;
+  width: 100%;
+}
+
+.editor-content div[contenteditable] {
+  outline: 0px solid transparent;
 }

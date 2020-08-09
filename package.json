@@ -13,7 +13,9 @@
     "type-check:watch": "npm run type-check -- --watch",
     "build": "npm run build:types && npm run build:js",
     "build:types": "tsc --emitDeclarationOnly",
+    "build:types:watch": "tsc --emitDeclarationOnly --watch",
     "build:js": "babel src --out-dir ./dist/build --extensions \".ts,.tsx\" --source-maps inline",
+    "build:js:watch": "babel src --out-dir ./dist/build --extensions \".ts,.tsx\" --source-maps inline --watch",
     "webpack": "npx webpack",
     "webpack:watch": "npx webpack --watch",
     "publish": "npx webpack --mode=production"
@@ -23,6 +25,8 @@
     "@babel/core": "^7.11.1",
     "@babel/parser": "^7.11.2",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.10.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.11.0",
     "@babel/plugin-transform-react-jsx": "^7.10.4",
     "@babel/preset-env": "^7.11.0",
     "@babel/preset-typescript": "^7.10.4",

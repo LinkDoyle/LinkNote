@@ -1,6 +1,9 @@
 import "./index.css";
+import { WennyDOM } from "./wenny";
 import { DrawBoard } from "./drawing/DrawBoard";
 import { WennyEditor } from "./editor/editor";
+import { EditorView } from "./editor/EditorView";
+
 console.log("Hello");
 
 window.onload = () => {
@@ -34,11 +37,13 @@ window.onload = () => {
     if (!editor) {
       editor = new WennyEditor(editorPage);
     }
+    WennyDOM.render(<EditorView />, editorPage);
   };
 
   drawboardButton.click();
 
   const sidebar = document.getElementsByClassName("sidebar")[0] as HTMLElement;
-  const container = document.getElementsByClassName("container")[0] as HTMLDivElement;
+  const container = document.getElementsByClassName(
+    "container"
+  )[0] as HTMLDivElement;
 };
-

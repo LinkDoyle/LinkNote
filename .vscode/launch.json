@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach localhost:8080",
+      "type": "firefox",
+      "request": "attach",
+      "url": "localhost:8080",
+      "webRoot": "${workspaceRoot}/src/",
+      "firefoxExecutable": "C:/Program Files/Firefox Developer Edition/firefox.exe"
+    },
+    {
+      "name": "Launch localhost:8080",
+      "type": "firefox",
+      "request": "launch",
+      "reAttach": true,
+      "url": "localhost:8080",
+      "webRoot": "${workspaceRoot}/src/",
+      "firefoxExecutable": "C:/Program Files/Firefox Developer Edition/firefox.exe"
+    }
+  ]
+}

@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
   mode: "development",
-  entry: "./src/index.ts",
+  entry: "./src/index.tsx",
   devtool: "inline-source-map",
   devServer: {
     contentBase: "./dist",
@@ -26,6 +26,7 @@ module.exports = {
     ],
   },
   resolve: {
+    modules: [path.resolve(__dirname, "src"), "node_modules"],
     extensions: [".tsx", ".ts", ".js", ".jsx", ".json"],
   },
   plugins: [
@@ -33,7 +34,7 @@ module.exports = {
       title: "LinkNote(dev)",
       filename: "index.html",
       template: "src/index.html",
-      inject: "head"
+      inject: "head",
     }),
   ],
   output: {
