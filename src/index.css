@@ -2,6 +2,10 @@ h1 {
   color: rebeccapurple;
 }
 
+body {
+  user-select: none;
+}
+
 .container {
   display: flex;
   align-items: stretch;

@@ -1,5 +1,6 @@
 .editor-container {
   position: relative;
+  box-sizing: content-box;
   color: purple;
   border-color: purple;
   border-style: solid;
@@ -8,19 +9,67 @@
   height: 800px;
 }
 
-.editor-line-number {
+.editor-line-numbers {
   position: absolute;
   width: 50px;
   height: 100%;
   text-align: right;
+  font-weight: normal;
+  font-size: 14px;
+  font-feature-settings: "liga", "calt";
+  line-height: 19px;
+}
+
+.editor-line-number {
+  height: 19px;
 }
 
 .editor-content {
   position: absolute;
+
   left: 71px;
   width: 100%;
+  cursor: text;
+  outline: 0px solid transparent;
+  height: 100%;
+  user-select: text;
 }
 
-.editor-content div[contenteditable] {
-  outline: 0px solid transparent;
+.editor-content span::selection {
+  background-color: violet;
+}
+
+.editor-lines {
+  height: 100%;
+  font-weight: normal;
+  font-size: 14px;
+  font-feature-settings: "liga", "calt";
+  line-height: 19px;
+}
+
+.editor-line {
+  height: 19px;
+}
+
+.editor-cursor {
+  position: absolute;
+  width: 2px;
+  height: 19px;
+  background-color: blueviolet;
+  top: 0;
+  left: 0;
+}
+
+.editor-input-textarea {
+  /* background-color: transparent; */
+  background-color: rgba(193, 61, 211, 0.5);
+  border: none;
+  color: transparent;
+  height: 19px;
+  line-height: 19px;
+  outline: none;
+  overflow: hidden;
+  position: absolute;
+  resize: none;
+  width: 5px;
 }
