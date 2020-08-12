@@ -9,14 +9,13 @@ const initialLines = [
   "Practice makes perfect",
 ];
 
+const parseLine = (line: string) =>
+  line.match(/(\w+|\s+)/g)?.map((s) => <span>{s}</span>);
+
 const initialLineNumbers = _.range(1, initialLines.length + 1);
 
-const Line = (props: { line: string }) => {
-  return (
-    <div className="editor-line">
-      <span>{props.line}</span>
-    </div>
-  );
+const LineView = (props: { line: string }) => {
+  return <div className="editor-line">{parseLine(props.line)}</div>;
 };
 
 const useInterval = (callback: () => void, ms: number) => {
@@ -324,8 +323,9 @@ export function EditorView() {
           onSelect={handleLinesSelect}
         >
           {lines.map((value, index) => {
-            return <Line key={lineNumbers[index]} line={value} />;
+            return <LineView key={lineNumbers[index]} line={value} />;
           })}
+          <div className="editor-text-measurer" ref={editorTextMeasurerRef} />
         </div>
         <div
           className="editor-cursor"
@@ -335,7 +335,6 @@ export function EditorView() {
             top: cursorPosition.y,
           }}
         ></div>
-        <div className="editor-text-measurer" ref={editorTextMeasurerRef} />
       </div>
     </div>
   );

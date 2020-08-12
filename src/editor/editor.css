@@ -43,11 +43,16 @@
   font-size: 14px;
   font-feature-settings: "liga", "calt";
   line-height: 19px;
+  white-space: nowrap;
   /* user-select: text; */
 }
 
 .editor-line {
   height: 19px;
+}
+
+.editor-text-measurer {
+  opacity: 50%;
 }
 
 .editor-cursor {
