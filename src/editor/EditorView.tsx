@@ -1,7 +1,14 @@
-import React, { createRef, useState, useEffect, useRef } from "react";
+import React, {
+  createRef,
+  useState,
+  useEffect,
+  useRef,
+  ReactElement,
+} from "react";
 import "./editor.css";
 import _, { rangeRight } from "lodash";
 import content from "*.html";
+import { JSXElement } from "@babel/types";
 
 const initialLines = [
   "Hello WennyEditor",
@@ -10,7 +17,7 @@ const initialLines = [
 ];
 
 const parseLine = (line: string) =>
-  line.match(/(\w+|\s+)/g)?.map((s) => <span>{s}</span>);
+  line.match(/(\w+|\s+)/g)?.map((s, index) => <span key={index}>{s}</span>);
 
 const initialLineNumbers = _.range(1, initialLines.length + 1);
 
@@ -36,7 +43,7 @@ const useInterval = (callback: () => void, ms: number) => {
   }, [ms]);
 };
 
-export function EditorView() {
+export function EditorView(): ReactElement {
   const [lineNumbers, setLineNumbers] = useState(initialLineNumbers);
   const [lines, setLines] = useState(initialLines);
   const contentRef = createRef<HTMLDivElement>();
@@ -54,25 +61,19 @@ export function EditorView() {
     editorTextMeasurer.append(clonedNode);
 
     const metricOffsets: number[] = [0];
-    for (let c of element.textContent) {
+    for (const c of element.textContent) {
       clonedNode.textContent += c;
       metricOffsets.push(clonedNode.getBoundingClientRect().width);
     }
 
     // console.debug(metricOffsets);
-    const metrics: number[] = [metricOffsets.length > 0 ? metricOffsets[0] : 0];
+    // const metrics: number[] = [metricOffsets.length > 0 ? metricOffsets[0] : 0];
     // for (let i = 1; i < metricOffsets.length; ++i) {
     //   const metric = metricOffsets[i] - metricOffsets[i - 1];
     //   metrics.push(metric);
     // }
     // console.debug(metrics);
     return metricOffsets;
-  };
-
-  const handleLinesSelect = (
-    element: React.SyntheticEvent<HTMLDivElement, Event>
-  ) => {
-    // console.log("handleLinesSelect");
   };
 
   const handleLinesMouseUp = (
@@ -199,8 +200,6 @@ export function EditorView() {
     console.log("handleContentChange");
     console.log(event);
 
-    let currentTarget = event.currentTarget;
-
     // let newLines: string[] = [];
     // for (let child of target.children) {
     //   const text = child.textContent ?? "";
@@ -229,6 +228,7 @@ export function EditorView() {
 
   const [isCompositionMode, setCompositionMode] = useState(false);
   const handleCompositionStart = (
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _: React.CompositionEvent<HTMLTextAreaElement>
   ) => {
     // console.debug("handleCompositionStart");
@@ -320,7 +320,6 @@ export function EditorView() {
           onMouseUp={handleLinesMouseUp}
           onMouseLeave={handleLinesMouseLeave}
           onBlur={handleLinesBlur}
-          onSelect={handleLinesSelect}
         >
           {lines.map((value, index) => {
             return <LineView key={lineNumbers[index]} line={value} />;
