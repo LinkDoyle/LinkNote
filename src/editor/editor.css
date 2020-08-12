@@ -26,13 +26,11 @@
 
 .editor-content {
   position: absolute;
-
   left: 71px;
   width: 100%;
   cursor: text;
   outline: 0px solid transparent;
   height: 100%;
-  user-select: text;
 }
 
 .editor-content span::selection {
@@ -45,6 +43,7 @@
   font-size: 14px;
   font-feature-settings: "liga", "calt";
   line-height: 19px;
+  user-select: text;
 }
 
 .editor-line {
@@ -61,15 +60,19 @@
 }
 
 .editor-input-textarea {
-  /* background-color: transparent; */
-  background-color: rgba(193, 61, 211, 0.5);
-  border: none;
-  color: transparent;
-  height: 19px;
-  line-height: 19px;
-  outline: none;
-  overflow: hidden;
-  position: absolute;
   resize: none;
+  position: absolute;
+  overflow: hidden;
+  outline: none;
+  line-height: 19px;
+  color: transparent;
+  border: none;
+  background-color: rgba(193, 61, 211, 0.5);
+  /* width: 1px; */
+  /* height: 1px; */
+  /* dev */
   width: 5px;
+  /* dev */
+  height: 19px;
+  /* background-color: transparent; */
 }
