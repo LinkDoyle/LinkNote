@@ -1,4 +1,4 @@
-import React, { createRef, useState, useEffect } from "react";
+import React, { createRef, useState, useEffect, useRef } from "react";
 import "./editor.css";
 import _, { rangeRight } from "lodash";
 import content from "*.html";
@@ -11,37 +11,66 @@ const initialLines = [
 
 const initialLineNumbers = _.range(1, initialLines.length + 1);
 
+const Line = (props: { line: string }) => {
+  return (
+    <div
+      className="editor-line"
+    >
+      <span>{props.line}</span>
+    </div>
+  );
+};
+
+const useInterval = (callback: () => void, ms: number) => {
+  const savedCallback = useRef<() => void>();
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  });
+
+  useEffect(() => {
+    function tick() {
+      if (savedCallback.current) {
+        savedCallback.current();
+      }
+    }
+    const handle = setInterval(tick, ms);
+    return () => clearInterval(handle);
+  }, [ms]);
+}
+
 export function EditorView() {
   const [lineNumbers, setLineNumbers] = useState(initialLineNumbers);
   const [lines, setLines] = useState(initialLines);
   const contentRef = createRef<HTMLDivElement>();
   const inputTextAreaRef = createRef<HTMLTextAreaElement>();
-  const textCursorRef = createRef<HTMLDivElement>();
   const editorTextMeasurerRef = createRef<HTMLDivElement>();
 
-  const handleLineChange = (event: React.FormEvent<HTMLDivElement>) => {
-    console.log("handleLineChange");
-    console.log(event.target);
-  };
+  const measureElementText = (element: HTMLElement): number[] => {
+    if (!element.textContent) {
+      return [0.];
+    }
+    console.debug(element.childNodes);
+    const editorTextMeasurer = editorTextMeasurerRef.current!;
+    editorTextMeasurer.childNodes.forEach((e) => e.remove());
+    const clonedNode = element.cloneNode() as HTMLElement;
+    editorTextMeasurer.append(clonedNode);
 
-  const handleLineInput = (event: React.FormEvent<HTMLDivElement>) => {
-    console.log(`handleLineInput:`);
-    console.log(event.target);
-  };
+    const metricOffsets: number[] = [0.];
+    for (let c of element.textContent) {
+      clonedNode.textContent += c;
+      metricOffsets.push(clonedNode.getBoundingClientRect().width);
+    }
 
-  const handleLineKeyUp = (event: React.FormEvent<HTMLDivElement>) => {
-    console.log(`handleLineKeyUp:`);
-    console.log(event.target);
-  };
-
-  const handleLineClick = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
-    console.log(`handleLineClick:`);
-
-    // const inputCursor = inputCursorRef.current!;
-    // inputCursor.focus();
-  };
+    console.debug(metricOffsets);
+    const metrics: number[] = [metricOffsets.length > 0 ? metricOffsets[0] : 0.];
+    for (let i = 1; i < metricOffsets.length; ++i) {
+      const metric = metricOffsets[i] - metricOffsets[i - 1];
+      metrics.push(metric);
+    }
+    console.debug(metrics);
+    return metricOffsets;
+  }
 
   const handleLinesSelect = (
     element: React.SyntheticEvent<HTMLDivElement, Event>
@@ -52,14 +81,14 @@ export function EditorView() {
   const handleLinesMouseUp = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
-    onCursorPositionChange(e.currentTarget);
+    updateCursorPosition(e);
   };
 
   const handleLinesMouseMove = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
     if (e.buttons & 1) {
-      onCursorPositionChange(e.currentTarget);
+      updateCursorPosition(e);
     }
   };
 
@@ -67,24 +96,30 @@ export function EditorView() {
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
     console.debug("handleLinesMouseDown");
-    onCursorPositionChange(e.currentTarget);
+    updateCursorPosition(e);
   };
 
   const handleLinesMouseLeave = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
-    onCursorPositionChange(e.currentTarget);
+    if (e.buttons & 1) {
+      updateCursorPosition(e);
+    }
   };
 
   const handleLinesBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    onCursorPositionChange(e.currentTarget);
+    // updateCursorPosition(e.currentTarget);
   };
 
   const [lastSelection, setLastSection] = useState<Selection | null>(null);
-  const onCursorPositionChange = (element: HTMLDivElement) => {
-    const cursor = textCursorRef.current!;
-    const inputTextArea = inputTextAreaRef.current!;
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
+  const updateCursorPosition = (event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>) => {
+    // updateCursorPositionWithSelection(element);
+    updateCursorPositionWithMeasurer(event);
+  }
+
+  const updateCursorPositionWithSelection = (element: HTMLDivElement) => {
     const clientRect = element.getBoundingClientRect();
     const selection = window.getSelection();
     if (!selection) {
@@ -116,27 +151,48 @@ export function EditorView() {
     const focusElement = focusNode.parentElement!;
     const newTop = focusElement.offsetTop;
     const newLeft = cursorOffsetX - clientRect.x;
-    cursor.style.top = `${newTop}px`;
-    cursor.style.left = `${newLeft}px`;
-    inputTextArea.style.top = `${newTop}px`;
-    inputTextArea.style.left = `${newLeft}px`;
+    setCursorPosition({ x: newLeft, y: newTop });
+    const inputTextArea = inputTextAreaRef.current!;
     inputTextArea.focus();
     selection.addRange(lastRange);
-  };
+  }
 
-  const Line = (props: { line: string }) => {
-    return (
-      <div
-        className="editor-line"
-        onChange={handleLineChange}
-        onKeyUp={handleLineKeyUp}
-        onInput={handleLineInput}
-        onClick={handleLineClick}
-      >
-        <span>{props.line}</span>
-      </div>
-    );
-  };
+  const updateCursorPositionWithMeasurer = (event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    console.debug(["updateCursorPositionWithMeasurer", target]);
+    if (target instanceof HTMLDivElement) {
+      let container = target;
+      if (target.classList.contains("editor-lines")) {
+        container = target.lastElementChild as HTMLDivElement;
+      }
+      if (target.classList.contains("editor-line")) {
+        const element = target.lastElementChild as HTMLElement;
+        if (element) {
+          setCursorPosition({
+            x: element.offsetLeft + element.offsetWidth,
+            y: element.offsetTop
+          });
+        }
+      }
+    } else {
+      const domRect = target.getBoundingClientRect();
+      const offsetX = Math.max(event.clientX - domRect.x, 0);
+      let deltaX = 0.
+      const metricOffsets = measureElementText(target);
+      for (const m of metricOffsets) {
+        if (m > offsetX) {
+          break;
+        }
+        deltaX = m;
+      }
+      setCursorPosition({
+        x: target.offsetTop,
+        y: target.offsetLeft + deltaX
+      });
+    }
+    const inputTextArea = inputTextAreaRef.current!;
+    inputTextArea.focus();
+  }
 
   const handleContentChange = (event: React.FormEvent<HTMLDivElement>) => {
     console.log("handleContentChange");
@@ -210,70 +266,11 @@ export function EditorView() {
     }
   };
 
-  const measureElementText = (element: HTMLElement): number[] => {
-    if (!element.textContent) {
-      return [0.];
-    }
-    console.debug(element.childNodes);
-    const editorTextMeasurer = editorTextMeasurerRef.current!;
-    editorTextMeasurer.childNodes.forEach((e) => e.remove());
-    const clonedNode = element.cloneNode() as HTMLElement;
-    editorTextMeasurer.append(clonedNode);
 
-    const metricOffsets: number[] = [0.];
-    for (let c of element.textContent) {
-      clonedNode.textContent += c;
-      metricOffsets.push(clonedNode.getBoundingClientRect().width);
-    }
-
-    console.debug(metricOffsets);
-    const metrics: number[] = [metricOffsets.length > 0 ? metricOffsets[0] : 0.];
-    for (let i = 1; i < metricOffsets.length; ++i) {
-      const metric = metricOffsets[i] - metricOffsets[i - 1];
-      metrics.push(metric);
-    }
-    console.debug(metrics);
-    return metricOffsets;
-  }
-
-  const handleTestAreaClick = (event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>) => {
-    console.log(event.target);
-    console.log(event.currentTarget);
-    const target = event.target as HTMLElement;
-    if (!target.textContent) {
-      return;
-    }
-    const metrics = measureElementText(target);
-    const domRect = target.getBoundingClientRect();
-    const offsetX = Math.max(event.clientX - domRect.x, 0);
-    let deltaX = 0.
-    for(const m of metrics) {
-      if(m > offsetX) {
-        break;
-      }
-      deltaX = m;
-    }
-
-    const cursor = textCursorRef.current!;
-    const inputTextArea = inputTextAreaRef.current!;
-    const newTop = target.offsetTop;
-    const newLeft = target.offsetLeft + deltaX;
-    cursor.style.top = `${newTop}px`;
-    cursor.style.left = `${newLeft}px`;
-    inputTextArea.style.top = `${newTop}px`;
-    inputTextArea.style.left = `${newLeft}px`;
-  }
-
-  useEffect(() => {
-    const handler = setInterval(() => {
-      const cursor = textCursorRef.current!;
-      cursor.style.visibility =
-        cursor.style.visibility === "inherit" ? "hidden" : "inherit";
-    }, 500);
-    return () => {
-      clearInterval(handler);
-    };
-  });
+  const [cursorVisibility, setCursorVisibility] = useState<"visible" | "hidden">("visible");
+  useInterval(() => {
+    setCursorVisibility(cursorVisibility === "visible" ? "hidden" : "visible");
+  }, 500);
 
   return (
     <div className="editor-container">
@@ -299,6 +296,7 @@ export function EditorView() {
           onCompositionUpdate={handleCompositionUpdate}
           onCompositionEnd={handleCompositionEnd}
           onCompositionStart={handleCompositionStart}
+          style={{ left: cursorPosition.x, top: cursorPosition.y }}
         />
         <div
           className="editor-lines"
@@ -318,15 +316,13 @@ export function EditorView() {
             return <Line key={lineNumbers[index]} line={value} />;
           })}
         </div>
-        <div className="editor-cursor" ref={textCursorRef}></div>
-        <div className="editor-text-measurer" ref={editorTextMeasurerRef} >
-          <span>x</span>
-        </div>
-        <div onClick={handleTestAreaClick}>
-          <span>There is a </span>
-          <span style={{ fontWeight: "bold" }}>span</span>
-          <span>{" here!"}</span>
-        </div>
+        <div className="editor-cursor"
+          style={{
+            visibility: cursorVisibility,
+            left: cursorPosition.x,
+            top: cursorPosition.y
+          }}></div>
+        <div className="editor-text-measurer" ref={editorTextMeasurerRef} />
       </div>
     </div>
   );

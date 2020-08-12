@@ -43,7 +43,7 @@
   font-size: 14px;
   font-feature-settings: "liga", "calt";
   line-height: 19px;
-  user-select: text;
+  /* user-select: text; */
 }
 
 .editor-line {
