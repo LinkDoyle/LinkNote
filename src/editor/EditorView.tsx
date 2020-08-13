@@ -240,6 +240,24 @@ const ContentContainer = (props: {
     setCompositionMode(false);
   };
 
+  const calcTextPosition = (caret: Caret) => {
+    const focusElement = caret.focusElement;
+    const lineElement = focusElement.parentElement!;
+    const spanIndex = _.indexOf(lineElement.children, focusElement);
+    const linesElement = lineElement.parentElement!;
+    const lineIndex = _.indexOf(linesElement.children, lineElement);
+    console.log(lineElement.children);
+    const column =
+      _.sum(
+        _.map(
+          _.slice(lineElement.children, 0, spanIndex),
+          (e) => e?.textContent?.length ?? 0
+        )
+      ) + caret.offset;
+    console.log([lineIndex, column, spanIndex, caret.offset]);
+    return [lineIndex, column];
+  };
+
   const handleTextAreaChange = (
     event: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
@@ -249,6 +267,10 @@ const ContentContainer = (props: {
     const insertedText = event.currentTarget.value;
     event.currentTarget.value = "";
     console.debug(insertedText);
+
+    const lastCaret = carets[carets.length - 1];
+    const [line, column] = calcTextPosition(lastCaret);
+    props.onTextInsert?.(line, column, insertedText);
 
     for (let i = 0; i < carets.length; ++i) {
       const caret = carets[i];
@@ -261,25 +283,8 @@ const ContentContainer = (props: {
         caret.offset += insertedText.length;
       }
     }
-    const lastCaret = carets[carets.length - 1];
-    const focusElement = lastCaret.focusElement;
-    const lineElement = focusElement.parentElement!;
-    const spanIndex = Array.prototype.slice
-      .call(lineElement.children)
-      .indexOf(focusElement);
-    const linesElement = lineElement.parentElement!;
-    const lineIndex = Array.prototype.slice
-      .call(linesElement.children)
-      .indexOf(lineElement);
-    const column = _.sum(
-      _.slice(linesElement.children, 0, spanIndex).map((e) =>
-        e && e.textContent ? e.textContent.length : 0
-      )
-    );
-    console.log([lineIndex, column, spanIndex, lastCaret.offset]);
 
     setCarets(carets);
-    props.onTextInsert?.(lineIndex, column, insertedText);
   };
 
   const [cursorVisibility, setCursorVisibility] = useState<
