@@ -399,12 +399,26 @@ export function EditorView(): ReactElement {
   const reducer = (state: State, action: Action) => {
     switch (action.type) {
       case "insert": {
+        const insertedLines = action.text.split(/\r?\n/);
+        const currentLine = state.lines[action.line];
+        const startLine =
+          currentLine.slice(0, action.offset) +
+          insertedLines[0] +
+          currentLine.slice(action.offset);
+
+        state.lines = [
+          ...state.lines.slice(0, action.line),
+          startLine,
+          ...insertedLines.slice(1),
+          ...state.lines.slice(action.line + 1),
+        ];
         break;
       }
       case "delete": {
         break;
       }
     }
+    console.log(state);
     return state;
   };
 
