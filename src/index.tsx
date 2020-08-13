@@ -4,8 +4,15 @@ import { WennyEditor } from "./editor/editor";
 import { EditorView } from "./editor/EditorView";
 import React from "react";
 import ReactDOM from "react-dom";
+import { KeyCode } from "./utility";
 
 console.log("Hello");
+
+window.addEventListener("keydown", (event: KeyboardEvent) => {
+  if (event.keyCode == KeyCode.DOM_VK_BACK_SPACE) {
+    event.preventDefault();
+  }
+});
 
 window.onload = () => {
   let drawBoard: DrawBoard;
