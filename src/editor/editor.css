@@ -52,7 +52,7 @@
 }
 
 .editor-text-measurer {
-  opacity: 50%;
+  visibility: hidden;
 }
 
 .editor-cursor {
@@ -80,4 +80,9 @@
   /* dev */
   height: 19px;
   /* background-color: transparent; */
+}
+
+.editor-debug-view {
+  opacity: 50%;
+  background-color: violet;
 }

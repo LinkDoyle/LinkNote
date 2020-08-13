@@ -14,10 +14,15 @@ const initialLines = [
   "Hello WennyEditor",
   "Hello LinkNode",
   "Practice makes perfect",
+  "Space: 1",
+  "Space:  2",
+  "Space:   3"
 ];
 
 const parseLine = (line: string) =>
-  line.match(/(\w+|\s+)/g)?.map((s, index) => <span key={index}>{s}</span>);
+  line.match(/(\w+|\s+)/g)
+    ?.map((s, index) =>
+      <span key={index}>{s.replace(/ /g, '\u00A0')}</span>);
 
 const initialLineNumbers = _.range(1, initialLines.length + 1);
 
@@ -142,7 +147,7 @@ export function EditorView(): ReactElement {
     const cursorOffsetX =
       (anchorNode === focusNode &&
         selection.anchorOffset < selection.focusOffset) ||
-      position & Node.DOCUMENT_POSITION_FOLLOWING
+        position & Node.DOCUMENT_POSITION_FOLLOWING
         ? rects[rects.length - 1].x + rects[rects.length - 1].width
         : rects[0].x;
 
@@ -157,6 +162,7 @@ export function EditorView(): ReactElement {
     selection.addRange(lastRange);
   };
 
+  const [carets, setCarets] = useState<{ anchorNode: HTMLElement | null, offset: number }[]>([]);
   const updateCursorPositionWithMeasurer = (
     event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>
   ) => {
@@ -181,18 +187,25 @@ export function EditorView(): ReactElement {
       const offsetX = Math.max(event.clientX - domRect.x, 0);
       let deltaX = 0;
       const metricOffsets = measureElementText(target);
-      for (const m of metricOffsets) {
-        if (m > offsetX) {
+      let offset = 0;
+      for (let i = 0; i < metricOffsets.length; ++i) {
+        if (metricOffsets[i] >= offsetX) {
           break;
         }
-        deltaX = m;
+        offset = i;
+        deltaX = metricOffsets[i];
       }
       setCursorPosition({
         x: target.offsetLeft + deltaX,
         y: target.offsetTop,
       });
+      setCarets([{
+        anchorNode: target,
+        offset: offset
+      }]);
     }
     const inputTextArea = inputTextAreaRef.current!;
+    inputTextArea.blur();
     inputTextArea.focus();
   };
 
@@ -252,12 +265,16 @@ export function EditorView(): ReactElement {
   const handleTextAreaChange = (
     event: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
+    console.log("handleTextAreaChange");
     if (isCompositionMode) {
       return;
     }
-    // console.debug(event.currentTarget.value);
     const insertedText = event.currentTarget.value;
     event.currentTarget.value = "";
+    console.debug(insertedText);
+
+
+
     if (!lastSelection) {
       return;
     }
@@ -306,6 +323,7 @@ export function EditorView(): ReactElement {
           onCompositionUpdate={handleCompositionUpdate}
           onCompositionEnd={handleCompositionEnd}
           onCompositionStart={handleCompositionStart}
+          onFocus={() => console.log("focus")}
           style={{ left: cursorPosition.x, top: cursorPosition.y }}
         />
         <div
@@ -324,7 +342,14 @@ export function EditorView(): ReactElement {
           {lines.map((value, index) => {
             return <LineView key={lineNumbers[index]} line={value} />;
           })}
-          <div className="editor-text-measurer" ref={editorTextMeasurerRef} />
+          <div className="editor-text-measurer editor-debug-view" ref={editorTextMeasurerRef} />
+
+          <div className="editor-debug-view">
+            <div>{carets.map((c, i) => {
+              return (<span key={i}>{c.anchorNode?.textContent} {c.offset} </span>);
+            })}
+            </div>
+          </div>
         </div>
         <div
           className="editor-cursor"
