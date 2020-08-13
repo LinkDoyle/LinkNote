@@ -4,11 +4,10 @@ import React, {
   useEffect,
   useRef,
   ReactElement,
+  useReducer,
 } from "react";
 import "./editor.css";
-import _, { rangeRight } from "lodash";
-import content from "*.html";
-import { JSXElement } from "@babel/types";
+import _ from "lodash";
 
 const initialLines = [
   "Hello WennyEditor",
@@ -16,18 +15,18 @@ const initialLines = [
   "Practice makes perfect",
   "Space: 1",
   "Space:  2",
-  "Space:   3"
+  "Space:   3",
 ];
 
-const parseLine = (line: string) =>
-  line.match(/(\w+|\s+)/g)
-    ?.map((s, index) =>
-      <span key={index}>{s.replace(/ /g, '\u00A0')}</span>);
-
-const initialLineNumbers = _.range(1, initialLines.length + 1);
-
-const LineView = (props: { line: string }) => {
-  return <div className="editor-line">{parseLine(props.line)}</div>;
+const parseLine = (line: string): JSX.Element[] => {
+  const matches = line.match(/(\w+|\s+)/g);
+  if (matches) {
+    return matches.map((s, index) => (
+      <span key={index}>{s.replace(/ /g, "\u00A0")}</span>
+    ));
+  } else {
+    return [<span key={0}></span>];
+  }
 };
 
 const useInterval = (callback: () => void, ms: number) => {
@@ -48,9 +47,36 @@ const useInterval = (callback: () => void, ms: number) => {
   }, [ms]);
 };
 
-export function EditorView(): ReactElement {
-  const [lineNumbers, setLineNumbers] = useState(initialLineNumbers);
-  const [lines, setLines] = useState(initialLines);
+const LineNumberContainer = (props: { lineNumbers: number[] }) => {
+  return (
+    <div className="editor-line-numbers">
+      {props.lineNumbers.map((value, index) => {
+        return (
+          <div className="editor-line-number" key={index}>
+            {value}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const LineView = (props: { line: string }) => {
+  return <div className="editor-line">{parseLine(props.line)}</div>;
+};
+
+const ContentContainer = (props: {
+  lines: string[];
+  onTextInsert?: (line: number, offset: number, text: string) => void;
+  onTextDelete?: (line: number, startOffset: number, endOffset: number) => void;
+}) => {
+  interface Caret {
+    focusElement: HTMLElement;
+    offset: number;
+    metricOffsets: number[];
+  }
+  const [carets, setCarets] = useState<Caret[]>([]);
+
   const contentRef = createRef<HTMLDivElement>();
   const inputTextAreaRef = createRef<HTMLTextAreaElement>();
   const editorTextMeasurerRef = createRef<HTMLDivElement>();
@@ -114,113 +140,62 @@ export function EditorView(): ReactElement {
     // updateCursorPosition(e.currentTarget);
   };
 
-  const [lastSelection, setLastSection] = useState<Selection | null>(null);
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-
   const updateCursorPosition = (
     event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>
   ) => {
     // updateCursorPositionWithSelection(element);
-    updateCursorPositionWithMeasurer(event);
+    updateCaretsPositionWithMeasurer(event);
   };
 
-  const updateCursorPositionWithSelection = (element: HTMLDivElement) => {
-    const clientRect = element.getBoundingClientRect();
-    const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
-    setLastSection(selection);
-    const anchorNode = selection.anchorNode;
-    const focusNode = selection.focusNode;
-    if (!anchorNode || !focusNode) {
-      return;
-    }
-    const rangeCount = selection.rangeCount;
-    const lastRange = selection.getRangeAt(rangeCount - 1);
-    const rects = lastRange.getClientRects();
-    console.debug(selection);
-    console.debug(lastRange);
-    console.debug(rects);
-
-    const position = anchorNode.compareDocumentPosition(focusNode);
-    const cursorOffsetX =
-      (anchorNode === focusNode &&
-        selection.anchorOffset < selection.focusOffset) ||
-        position & Node.DOCUMENT_POSITION_FOLLOWING
-        ? rects[rects.length - 1].x + rects[rects.length - 1].width
-        : rects[0].x;
-
-    // console.debug([clientRect.x, cursorOffsetX]);
-
-    const focusElement = focusNode.parentElement!;
-    const newTop = focusElement.offsetTop;
-    const newLeft = cursorOffsetX - clientRect.x;
-    setCursorPosition({ x: newLeft, y: newTop });
-    const inputTextArea = inputTextAreaRef.current!;
-    inputTextArea.focus();
-    selection.addRange(lastRange);
-  };
-
-  const [carets, setCarets] = useState<{ anchorNode: HTMLElement | null, offset: number }[]>([]);
-  const updateCursorPositionWithMeasurer = (
+  const updateCaretsPositionWithMeasurer = (
     event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>
   ) => {
     const target = event.target as HTMLElement;
-    // console.debug(["updateCursorPositionWithMeasurer", target]);
+    let span: HTMLSpanElement | null = null;
+    let currentOffset = -1;
+
     if (target instanceof HTMLDivElement) {
       let container = target;
       if (target.classList.contains("editor-lines")) {
         container = target.lastElementChild as HTMLDivElement;
       }
+
       if (container.classList.contains("editor-line")) {
         const element = container.lastElementChild as HTMLElement;
-        if (element) {
-          setCursorPosition({
-            x: element.offsetLeft + element.offsetWidth,
-            y: element.offsetTop,
-          });
+        if (element && element instanceof HTMLSpanElement) {
+          span = element;
+          currentOffset = span.textContent!.length;
         }
       }
-    } else {
-      const domRect = target.getBoundingClientRect();
-      const offsetX = Math.max(event.clientX - domRect.x, 0);
-      let deltaX = 0;
-      const metricOffsets = measureElementText(target);
-      let offset = 0;
-      for (let i = 0; i < metricOffsets.length; ++i) {
-        if (metricOffsets[i] >= offsetX) {
-          break;
-        }
-        offset = i;
-        deltaX = metricOffsets[i];
-      }
-      setCursorPosition({
-        x: target.offsetLeft + deltaX,
-        y: target.offsetTop,
-      });
-      setCarets([{
-        anchorNode: target,
-        offset: offset
-      }]);
+    } else if (target instanceof HTMLSpanElement) {
+      span = target;
     }
+
+    if (span) {
+      const metricOffsets = measureElementText(span);
+      if (currentOffset === -1) {
+        const domRect = target.getBoundingClientRect();
+        const offsetX = Math.max(event.clientX - domRect.x, 0);
+        currentOffset = 0;
+        for (let i = 0; i < metricOffsets.length; ++i) {
+          if (metricOffsets[i] >= offsetX) {
+            break;
+          }
+          currentOffset = i;
+        }
+      }
+      setCarets([
+        {
+          focusElement: span,
+          offset: currentOffset,
+          metricOffsets: metricOffsets,
+        },
+      ]);
+    }
+
     const inputTextArea = inputTextAreaRef.current!;
     inputTextArea.blur();
     inputTextArea.focus();
-  };
-
-  const handleContentChange = (event: React.FormEvent<HTMLDivElement>) => {
-    console.log("handleContentChange");
-    console.log(event);
-
-    // let newLines: string[] = [];
-    // for (let child of target.children) {
-    //   const text = child.textContent ?? "";
-    //   newLines.push(text);
-    // }
-    // setLines(newLines);
-    const lineCount = Math.max(1, event.currentTarget.children.length);
-    setLineNumbers(_.range(1, lineCount + 1));
   };
 
   const handleContentInput = (event: React.FormEvent<HTMLDivElement>) => {
@@ -228,7 +203,7 @@ export function EditorView(): ReactElement {
     console.log(event);
   };
 
-  const handleContentKeyUp = (event: React.FormEvent<HTMLDivElement>) => {
+  const handleContentKeyUp = (event: React.KeyboardEvent<HTMLDivElement>) => {
     console.log(`handleContentKeyUp:`);
     console.log(event);
   };
@@ -247,12 +222,14 @@ export function EditorView(): ReactElement {
     // console.debug("handleCompositionStart");
     setCompositionMode(true);
   };
+
   const handleCompositionUpdate = (
     event: React.CompositionEvent<HTMLTextAreaElement>
   ) => {
     // console.debug("handleCompositionUpdate");
     // TODO: show characters
   };
+
   const handleCompositionEnd = (
     event: React.CompositionEvent<HTMLTextAreaElement>
   ) => {
@@ -262,10 +239,10 @@ export function EditorView(): ReactElement {
     event.currentTarget.value = "";
     setCompositionMode(false);
   };
+
   const handleTextAreaChange = (
     event: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
-    console.log("handleTextAreaChange");
     if (isCompositionMode) {
       return;
     }
@@ -273,23 +250,36 @@ export function EditorView(): ReactElement {
     event.currentTarget.value = "";
     console.debug(insertedText);
 
+    for (let i = 0; i < carets.length; ++i) {
+      const caret = carets[i];
+      const focusElement = caret.focusElement;
+      if (focusElement) {
+        const t = focusElement.textContent;
+        focusElement.textContent =
+          t?.slice(0, caret.offset) + insertedText + t?.slice(caret.offset);
+        caret.metricOffsets = measureElementText(focusElement);
+        caret.offset += insertedText.length;
+      }
+    }
+    const lastCaret = carets[carets.length - 1];
+    const focusElement = lastCaret.focusElement;
+    const lineElement = focusElement.parentElement!;
+    const spanIndex = Array.prototype.slice
+      .call(lineElement.children)
+      .indexOf(focusElement);
+    const linesElement = lineElement.parentElement!;
+    const lineIndex = Array.prototype.slice
+      .call(linesElement.children)
+      .indexOf(lineElement);
+    const column = _.sum(
+      _.slice(linesElement.children, 0, spanIndex).map((e) =>
+        e && e.textContent ? e.textContent.length : 0
+      )
+    );
+    console.log([lineIndex, column, spanIndex, lastCaret.offset]);
 
-
-    if (!lastSelection) {
-      return;
-    }
-    const focusNode = lastSelection.focusNode;
-    if (!focusNode) {
-      return;
-    }
-    const focusOffset = lastSelection.focusOffset;
-    const focusElement = focusNode.parentElement;
-    console.debug(focusElement);
-    if (focusElement) {
-      const t = focusNode.textContent;
-      focusElement.textContent =
-        t?.slice(0, focusOffset) + insertedText + t?.slice(focusOffset);
-    }
+    setCarets(carets);
+    props.onTextInsert?.(lineIndex, column, insertedText);
   };
 
   const [cursorVisibility, setCursorVisibility] = useState<
@@ -299,67 +289,134 @@ export function EditorView(): ReactElement {
     setCursorVisibility(cursorVisibility === "visible" ? "hidden" : "visible");
   }, 500);
 
-  return (
-    <div className="editor-container">
-      <div className="editor-line-numbers">
-        {lineNumbers.map((value, index) => {
-          return (
-            <div className="editor-line-number" key={index}>
-              {value}
-            </div>
-          );
-        })}
-      </div>
-      <div className="editor-content">
-        <textarea
-          ref={inputTextAreaRef}
-          className="editor-input-textarea"
-          autoCapitalize="off"
-          autoComplete="off"
-          autoCorrect="off"
-          role="textbox"
-          wrap="off"
-          onChange={handleTextAreaChange}
-          onCompositionUpdate={handleCompositionUpdate}
-          onCompositionEnd={handleCompositionEnd}
-          onCompositionStart={handleCompositionStart}
-          onFocus={() => console.log("focus")}
-          style={{ left: cursorPosition.x, top: cursorPosition.y }}
-        />
-        <div
-          className="editor-lines"
-          ref={contentRef}
-          onChange={handleContentChange}
-          onKeyUp={handleContentKeyUp}
-          onInput={handleContentInput}
-          onClick={handleContentClick}
-          onMouseDown={handleLinesMouseDown}
-          onMouseMove={handleLinesMouseMove}
-          onMouseUp={handleLinesMouseUp}
-          onMouseLeave={handleLinesMouseLeave}
-          onBlur={handleLinesBlur}
-        >
-          {lines.map((value, index) => {
-            return <LineView key={lineNumbers[index]} line={value} />;
-          })}
-          <div className="editor-text-measurer editor-debug-view" ref={editorTextMeasurerRef} />
+  const calcCaretInputAreaPosition = () => {
+    if (carets.length === 0) {
+      return {
+        left: 0,
+        top: 0,
+      };
+    }
+    const lastCaret = carets[carets.length - 1];
+    return {
+      left:
+        lastCaret.focusElement.offsetLeft +
+        lastCaret.metricOffsets[lastCaret.offset],
+      top: lastCaret.focusElement.offsetTop,
+    };
+  };
 
-          <div className="editor-debug-view">
-            <div>{carets.map((c, i) => {
-              return (<span key={i}>{c.anchorNode?.textContent} {c.offset} </span>);
+  return (
+    <div className="editor-content">
+      <div
+        className="editor-lines"
+        ref={contentRef}
+        // onChange={handleContentChange}
+        // onKeyUp={handleContentKeyUp}
+        // onInput={handleContentInput}
+        onClick={handleContentClick}
+        onMouseDown={handleLinesMouseDown}
+        onMouseMove={handleLinesMouseMove}
+        onMouseUp={handleLinesMouseUp}
+        onMouseLeave={handleLinesMouseLeave}
+        onBlur={handleLinesBlur}
+      >
+        {props.lines.map((value, index) => {
+          return <LineView key={index} line={value} />;
+        })}
+        <div
+          className="editor-text-measurer editor-debug-view"
+          ref={editorTextMeasurerRef}
+        />
+
+        <div className="editor-debug-view">
+          <div>
+            {carets.map((c, i) => {
+              return (
+                <span key={i}>
+                  {c.focusElement?.textContent} {c.offset}{" "}
+                </span>
+              );
             })}
-            </div>
           </div>
         </div>
-        <div
-          className="editor-cursor"
-          style={{
-            visibility: cursorVisibility,
-            left: cursorPosition.x,
-            top: cursorPosition.y,
-          }}
-        ></div>
       </div>
+      <div className="editor-carets" style={{ visibility: cursorVisibility }}>
+        {carets.map((c) => (
+          <div
+            className="editor-caret"
+            style={{
+              left: c.focusElement.offsetLeft + c.metricOffsets[c.offset],
+              top: c.focusElement.offsetTop,
+            }}
+          ></div>
+        ))}
+      </div>
+      <textarea
+        ref={inputTextAreaRef}
+        className="editor-input-textarea"
+        autoCapitalize="off"
+        autoComplete="off"
+        autoCorrect="off"
+        role="textbox"
+        wrap="off"
+        onChange={handleTextAreaChange}
+        onCompositionUpdate={handleCompositionUpdate}
+        onCompositionEnd={handleCompositionEnd}
+        onCompositionStart={handleCompositionStart}
+        onFocus={() => console.log("focus")}
+        style={{ ...calcCaretInputAreaPosition() }}
+      />
+    </div>
+  );
+};
+
+export function EditorView(): ReactElement {
+  type Action =
+    | {
+        type: "insert";
+        line: number;
+        offset: number;
+        text: string;
+      }
+    | {
+        type: "delete";
+        startLine: number;
+        endLine: number;
+        startOffset: number;
+        endOffset: number;
+      };
+
+  type State = {
+    lines: string[];
+    lineNumbers: number[];
+  };
+
+  const reducer = (state: State, action: Action) => {
+    switch (action.type) {
+      case "insert": {
+        break;
+      }
+      case "delete": {
+        break;
+      }
+    }
+    return state;
+  };
+
+  const [state, dispatch] = useReducer(reducer, {
+    lines: initialLines,
+    lineNumbers: _.range(1, initialLines.length + 1),
+  });
+
+  return (
+    <div className="editor-container">
+      <LineNumberContainer lineNumbers={state.lineNumbers} />
+      <ContentContainer
+        lines={state.lines}
+        onTextInsert={(line, offset, text) =>
+          dispatch({ type: "insert", line, offset, text })
+        }
+      />
     </div>
   );
 }
