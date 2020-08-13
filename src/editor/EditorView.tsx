@@ -346,9 +346,10 @@ const ContentContainer = (props: {
         </div>
       </div>
       <div className="editor-carets" style={{ visibility: cursorVisibility }}>
-        {carets.map((c) => (
+        {carets.map((c, index) => (
           <div
             className="editor-caret"
+            key={index}
             style={{
               left: c.focusElement.offsetLeft + c.metricOffsets[c.offset],
               top: c.focusElement.offsetTop,
@@ -378,18 +379,18 @@ const ContentContainer = (props: {
 export function EditorView(): ReactElement {
   type Action =
     | {
-        type: "insert";
-        line: number;
-        offset: number;
-        text: string;
-      }
+      type: "insert";
+      line: number;
+      offset: number;
+      text: string;
+    }
     | {
-        type: "delete";
-        startLine: number;
-        endLine: number;
-        startOffset: number;
-        endOffset: number;
-      };
+      type: "delete";
+      startLine: number;
+      endLine: number;
+      startOffset: number;
+      endOffset: number;
+    };
 
   type State = {
     lines: string[];
