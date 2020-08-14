@@ -26,8 +26,8 @@ window.onload = () => {
 
   const pageList = [drawboardPage, editorPage];
 
-  let activatePage = (page: HTMLElement) => {
-    for (let p of pageList) {
+  const activatePage = (page: HTMLElement) => {
+    for (const p of pageList) {
       p.style.display = "none";
     }
     page.style.display = "block";
