@@ -77,11 +77,12 @@ const ContentContainer = (props: {
   onTextDelete?: (line: number, startOffset: number, endOffset: number) => void;
   onCaretsChange?: (carets: Caret[]) => void;
 }) => {
-  interface CaretElementState {
+  interface CaretMetric {
     focusElement: HTMLElement;
     metricOffsets: number[];
+    metricIndex: number;
   }
-  const [carets, setCarets] = useState<CaretElementState[]>([]);
+  const [caretMetrics, setCaretMetrics] = useState<CaretMetric[]>([]);
 
   const contentRef = createRef<HTMLDivElement>();
   const inputTextAreaRef = createRef<HTMLTextAreaElement>();
@@ -158,7 +159,7 @@ const ContentContainer = (props: {
   ) => {
     const target = event.target as HTMLElement;
     let span: HTMLSpanElement | null = null;
-    let currentSpanOffset = -1;
+    let metricIndex = -1;
 
     if (target instanceof HTMLDivElement) {
       let container = target;
@@ -170,7 +171,7 @@ const ContentContainer = (props: {
         const element = container.lastElementChild as HTMLElement;
         if (element && element instanceof HTMLSpanElement) {
           span = element;
-          currentSpanOffset = span.textContent!.length;
+          metricIndex = span.textContent?.length ?? 0;
         }
       }
     } else if (target instanceof HTMLSpanElement) {
@@ -179,38 +180,39 @@ const ContentContainer = (props: {
 
     if (span) {
       const metricOffsets = measureElementText(span);
-      if (currentSpanOffset === -1) {
+      if (metricIndex === -1) {
         const domRect = target.getBoundingClientRect();
         const offsetX = Math.max(event.clientX - domRect.x, 0);
-        currentSpanOffset = 0;
+        metricIndex = 0;
         for (let i = 0; i < metricOffsets.length; ++i) {
           if (metricOffsets[i] >= offsetX) {
             break;
           }
-          currentSpanOffset = i;
+          metricIndex = i;
         }
       }
-      const lineElement = span.parentElement!;
-      const spanIndex = _.indexOf(lineElement.children, span);
-      const linesElement = lineElement.parentElement!;
-      const lineIndex = _.indexOf(linesElement.children, lineElement);
+      const lineElement = span.parentElement;
+      const spanIndex = _.indexOf(lineElement?.children, span);
+      const linesElement = lineElement?.parentElement;
+      const lineIndex = _.indexOf(linesElement?.children, lineElement);
       const currentOffset =
         _.sum(
           _.map(
-            _.slice(lineElement.children, 0, spanIndex),
+            _.slice(lineElement?.children, 0, spanIndex),
             (e) => e?.textContent?.length ?? 0
           )
-        ) + currentSpanOffset;
+        ) + metricIndex;
       props.onCaretsChange?.([{
         line: lineIndex,
         offset: currentOffset
       }]);
-      // setCarets([
-      //   {
-      //     focusElement: span,
-      //     metricOffsets: metricOffsets,
-      //   },
-      // ]);
+      setCaretMetrics([
+        {
+          focusElement: span,
+          metricOffsets: metricOffsets,
+          metricIndex: metricIndex
+        },
+      ]);
     }
 
     const inputTextArea = inputTextAreaRef.current!;
@@ -288,8 +290,11 @@ const ContentContainer = (props: {
     event.currentTarget.value = "";
     console.debug(insertedText);
 
-    const lastCaret = props.carets[props.carets.length - 1];
-    props.onTextInsert?.(lastCaret.line, lastCaret.offset, insertedText);
+    const lastCaret = _.last(props.carets);
+    console.log(lastCaret);
+    if (lastCaret) {
+      props.onTextInsert?.(lastCaret.line, lastCaret.offset, insertedText);
+    }
 
     // for (let i = 0; i < carets.length; ++i) {
     //   const caret = carets[i];
@@ -313,22 +318,21 @@ const ContentContainer = (props: {
   }, 500);
 
   const calcCaretInputAreaPosition = () => {
-    if (carets.length === 0) {
+    if (caretMetrics.length === 0) {
       return {
         left: 0,
         top: 0,
       };
     }
 
-    const lastCaret = _.last(props.carets);
-    const lastCaretElement = _.last(carets);
+    const lastCaretMetric = _.last(caretMetrics);
 
-    return lastCaret && lastCaretElement
+    return lastCaretMetric
       ? {
         left:
-          lastCaretElement.focusElement.offsetLeft +
-          lastCaretElement.metricOffsets[lastCaret.offset],
-        top: lastCaretElement.focusElement.offsetTop,
+          lastCaretMetric.focusElement.offsetLeft +
+          lastCaretMetric.metricOffsets[lastCaretMetric.metricIndex],
+        top: lastCaretMetric.focusElement.offsetTop,
       } : {
         left: 0, top: 0
       };
@@ -370,12 +374,12 @@ const ContentContainer = (props: {
         </div>
       </div>
       <div className="editor-carets" style={{ visibility: cursorVisibility }}>
-        {carets.map((c, index) => (
+        {caretMetrics.map((c, index) => (
           <div
             className="editor-caret"
             key={index}
             style={{
-              left: c.focusElement.offsetLeft + c.metricOffsets[props.carets[index].offset],
+              left: c.focusElement.offsetLeft + c.metricOffsets[c.metricIndex],
               top: c.focusElement.offsetTop,
             }}
           ></div>
@@ -442,7 +446,7 @@ export function EditorView(): ReactElement {
           ...state.lines.slice(action.line + 1),
         ];
 
-        const newCaretLine = action.line + initialLines.length - 1;
+        const newCaretLine = action.line + insertedLines.length - 1;
         const newCaretOffset = insertedLines.length === 1
           ? action.offset + insertedLines[0].length
           : insertedLines[insertedLines.length - 1].length;
