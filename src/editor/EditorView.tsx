@@ -1,5 +1,4 @@
 import React, {
-  createRef,
   useState,
   useEffect,
   useRef,
@@ -24,7 +23,7 @@ const initialLines = [
 ];
 
 const parseLine = (line: string): JSX.Element[] => {
-  const matches = line.match(/(\w+|\s+)/g);
+  const matches = line.match(/(\S+|\s+)/g);
   if (matches) {
     return matches.map((s, index) => (
       <span key={index}>{s.replace(/ /g, "\u00A0")}</span>
@@ -84,15 +83,14 @@ const ContentContainer = (props: {
   }
   const [caretMetrics, setCaretMetrics] = useState<CaretMetric[]>([]);
 
-  const contentRef = createRef<HTMLDivElement>();
-  const inputTextAreaRef = createRef<HTMLTextAreaElement>();
-  const editorTextMeasurerRef = createRef<HTMLDivElement>();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const inputTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  const editorTextMeasurerRef = useRef<HTMLDivElement>(null);
 
   const measureElementText = (element: HTMLElement): number[] => {
     if (!element.textContent) {
       return [0];
     }
-    // console.debug(element.childNodes);
     const editorTextMeasurer = editorTextMeasurerRef.current!;
     editorTextMeasurer.childNodes.forEach((e) => e.remove());
     const clonedNode = element.cloneNode() as HTMLElement;
@@ -103,14 +101,6 @@ const ContentContainer = (props: {
       clonedNode.textContent += c;
       metricOffsets.push(clonedNode.getBoundingClientRect().width);
     }
-
-    // console.debug(metricOffsets);
-    // const metrics: number[] = [metricOffsets.length > 0 ? metricOffsets[0] : 0];
-    // for (let i = 1; i < metricOffsets.length; ++i) {
-    //   const metric = metricOffsets[i] - metricOffsets[i - 1];
-    //   metrics.push(metric);
-    // }
-    // console.debug(metrics);
     return metricOffsets;
   };
 
@@ -195,30 +185,69 @@ const ContentContainer = (props: {
       const spanIndex = _.indexOf(lineElement?.children, span);
       const linesElement = lineElement?.parentElement;
       const lineIndex = _.indexOf(linesElement?.children, lineElement);
-      const currentOffset =
-        _.sum(
-          _.map(
-            _.slice(lineElement?.children, 0, spanIndex),
-            (e) => e?.textContent?.length ?? 0
-          )
-        ) + metricIndex;
-      props.onCaretsChange?.([{
-        line: lineIndex,
-        offset: currentOffset
-      }]);
+      const charOffset =
+        _(lineElement?.children)
+          .slice(0, spanIndex)
+          .sumBy((e) => e.textContent?.length ?? 0) + metricIndex;
+      props.onCaretsChange?.([
+        {
+          line: lineIndex,
+          offset: charOffset,
+        },
+      ]);
+      console.log([
+        {
+          line: lineIndex,
+          offset: charOffset,
+        },
+      ]);
       setCaretMetrics([
         {
           focusElement: span,
           metricOffsets: metricOffsets,
-          metricIndex: metricIndex
+          metricIndex: metricIndex,
         },
       ]);
     }
-
-    const inputTextArea = inputTextAreaRef.current!;
-    inputTextArea.blur();
-    inputTextArea.focus();
   };
+
+  // update caretMetrics
+  useEffect(() => {
+    const linesView = contentRef.current;
+    if (!linesView) {
+      return;
+    }
+    const newCaretMetrics: CaretMetric[] = [];
+    for (const caret of props.carets) {
+      const lineView = linesView.children[caret.line];
+      let restOffset = caret.offset;
+      let spanElement: HTMLSpanElement | null = null;
+      for (const element of lineView.children) {
+        if (!(element instanceof HTMLSpanElement)) {
+          continue;
+        }
+        const currentLength = element.textContent?.length ?? 0;
+        if (restOffset >= currentLength) {
+          restOffset -= currentLength;
+        } else {
+          spanElement = element;
+          break;
+        }
+      }
+      if (spanElement) {
+        newCaretMetrics.push({
+          focusElement: spanElement,
+          metricOffsets: measureElementText(spanElement),
+          metricIndex: restOffset,
+        });
+      }
+    }
+    setCaretMetrics(newCaretMetrics);
+  }, [props.carets]);
+
+  useEffect(() => {
+    inputTextAreaRef.current?.focus();
+  });
 
   const handleContentInput = (event: React.FormEvent<HTMLDivElement>) => {
     console.log(`handleContentInput:`);
@@ -293,21 +322,10 @@ const ContentContainer = (props: {
     const lastCaret = _.last(props.carets);
     console.log(lastCaret);
     if (lastCaret) {
+      console.log(props.carets);
       props.onTextInsert?.(lastCaret.line, lastCaret.offset, insertedText);
+      console.log(props.carets);
     }
-
-    // for (let i = 0; i < carets.length; ++i) {
-    //   const caret = carets[i];
-    //   const focusElement = caret.focusElement;
-    //   if (focusElement) {
-    //     // const t = focusElement.textContent;
-    //     // focusElement.textContent =
-    //     //   t?.slice(0, caret.offset) + insertedText + t?.slice(caret.offset);
-    //     caret.metricOffsets = measureElementText(focusElement);
-    //   }
-    // }
-
-    // setCarets(carets);
   };
 
   const [cursorVisibility, setCursorVisibility] = useState<
@@ -329,13 +347,15 @@ const ContentContainer = (props: {
 
     return lastCaretMetric
       ? {
-        left:
-          lastCaretMetric.focusElement.offsetLeft +
-          lastCaretMetric.metricOffsets[lastCaretMetric.metricIndex],
-        top: lastCaretMetric.focusElement.offsetTop,
-      } : {
-        left: 0, top: 0
-      };
+          left:
+            lastCaretMetric.focusElement.offsetLeft +
+            lastCaretMetric.metricOffsets[lastCaretMetric.metricIndex],
+          top: lastCaretMetric.focusElement.offsetTop,
+        }
+      : {
+          left: 0,
+          top: 0,
+        };
   };
 
   return (
@@ -407,21 +427,22 @@ const ContentContainer = (props: {
 export function EditorView(): ReactElement {
   type Action =
     | {
-      type: "insert";
-      line: number;
-      offset: number;
-      text: string;
-    }
+        type: "insert";
+        line: number;
+        offset: number;
+        text: string;
+      }
     | {
-      type: "delete";
-      startLine: number;
-      endLine: number;
-      startOffset: number;
-      endOffset: number;
-    } | {
-      type: "updateCarets";
-      carets: Caret[];
-    };
+        type: "delete";
+        startLine: number;
+        endLine: number;
+        startOffset: number;
+        endOffset: number;
+      }
+    | {
+        type: "updateCarets";
+        carets: Caret[];
+      };
 
   type State = {
     lines: string[];
@@ -447,17 +468,20 @@ export function EditorView(): ReactElement {
         ];
 
         const newCaretLine = action.line + insertedLines.length - 1;
-        const newCaretOffset = insertedLines.length === 1
-          ? action.offset + insertedLines[0].length
-          : insertedLines[insertedLines.length - 1].length;
+        const newCaretOffset =
+          insertedLines.length === 1
+            ? action.offset + insertedLines[0].length
+            : insertedLines[insertedLines.length - 1].length;
         return {
           lines: newLines,
           lineNumbers: _.range(1, newLines.length + 1),
-          carets: [{
-            line: newCaretLine,
-            offset: newCaretOffset
-          }]
-        }
+          carets: [
+            {
+              line: newCaretLine,
+              offset: newCaretOffset,
+            },
+          ],
+        };
       }
       case "delete": {
         break;
@@ -465,8 +489,8 @@ export function EditorView(): ReactElement {
       case "updateCarets": {
         return {
           ...state,
-          carets: [...action.carets]
-        }
+          carets: [...action.carets],
+        };
       }
     }
 
@@ -476,7 +500,7 @@ export function EditorView(): ReactElement {
   const [state, dispatch] = useReducer(reducer, {
     lines: initialLines,
     lineNumbers: _.range(1, initialLines.length + 1),
-    carets: [{ line: 0, offset: 0 }]
+    carets: [{ line: 0, offset: 0 }],
   });
 
   return (
@@ -488,7 +512,9 @@ export function EditorView(): ReactElement {
         onTextInsert={(line, offset, text) =>
           dispatch({ type: "insert", line, offset, text })
         }
-        onCaretsChange={(carets) => dispatch({ type: "updateCarets", carets: carets })}
+        onCaretsChange={(carets) =>
+          dispatch({ type: "updateCarets", carets: carets })
+        }
       />
     </div>
   );
