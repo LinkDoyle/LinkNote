@@ -195,19 +195,6 @@ const ContentContainer = (props: {
           offset: charOffset,
         },
       ]);
-      console.log([
-        {
-          line: lineIndex,
-          offset: charOffset,
-        },
-      ]);
-      setCaretMetrics([
-        {
-          focusElement: span,
-          metricOffsets: metricOffsets,
-          metricIndex: metricIndex,
-        },
-      ]);
     }
   };
 
@@ -227,7 +214,7 @@ const ContentContainer = (props: {
           continue;
         }
         const currentLength = element.textContent?.length ?? 0;
-        if (restOffset >= currentLength) {
+        if (restOffset > currentLength) {
           restOffset -= currentLength;
         } else {
           spanElement = element;
@@ -347,15 +334,15 @@ const ContentContainer = (props: {
 
     return lastCaretMetric
       ? {
-          left:
-            lastCaretMetric.focusElement.offsetLeft +
-            lastCaretMetric.metricOffsets[lastCaretMetric.metricIndex],
-          top: lastCaretMetric.focusElement.offsetTop,
-        }
+        left:
+          lastCaretMetric.focusElement.offsetLeft +
+          lastCaretMetric.metricOffsets[lastCaretMetric.metricIndex],
+        top: lastCaretMetric.focusElement.offsetTop,
+      }
       : {
-          left: 0,
-          top: 0,
-        };
+        left: 0,
+        top: 0,
+      };
   };
 
   return (
@@ -427,22 +414,22 @@ const ContentContainer = (props: {
 export function EditorView(): ReactElement {
   type Action =
     | {
-        type: "insert";
-        line: number;
-        offset: number;
-        text: string;
-      }
+      type: "insert";
+      line: number;
+      offset: number;
+      text: string;
+    }
     | {
-        type: "delete";
-        startLine: number;
-        endLine: number;
-        startOffset: number;
-        endOffset: number;
-      }
+      type: "delete";
+      startLine: number;
+      endLine: number;
+      startOffset: number;
+      endOffset: number;
+    }
     | {
-        type: "updateCarets";
-        carets: Caret[];
-      };
+      type: "updateCarets";
+      carets: Caret[];
+    };
 
   type State = {
     lines: string[];
