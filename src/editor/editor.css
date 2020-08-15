@@ -38,6 +38,8 @@
 }
 
 .editor-lines {
+  position: absolute;
+  top: 0;
   height: 100%;
   font-weight: normal;
   font-size: 14px;
@@ -83,6 +85,8 @@
 }
 
 .editor-debug-view {
+  position: absolute;
+  bottom: 0;
   opacity: 50%;
   background-color: violet;
 }

@@ -1,7 +1,7 @@
 import "./index.css";
 import { DrawBoard } from "./drawing/DrawBoard";
 import { WennyEditor } from "./editor/editor";
-import { EditorView } from "./editor/EditorView";
+import EditorView from "./editor/view/EditorView";
 import React from "react";
 import ReactDOM from "react-dom";
 import { KeyCode } from "./utility";
