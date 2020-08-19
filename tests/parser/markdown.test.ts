@@ -1,3 +1,6 @@
 import { Parser } from "../../src/parser/markdown";
 
-let parser = new Parser();
+const parser = new Parser();
+test("parser is not null", () => {
+  expect(parser).not.toBeNull();
+});

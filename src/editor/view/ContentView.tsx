@@ -1,9 +1,17 @@
-import React, { useState, useRef, useEffect, ReactElement } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  ReactElement,
+  useContext,
+} from "react";
 import _ from "lodash";
-import { Caret } from "../editorReducer";
+import { Caret, TextRange } from "../editorReducer";
 import DebugView from "./DebugView";
 import Carets from "./Carets";
 import Lines, { useCaretMetrics } from "./Lines";
+import { KeyCode } from "../../utility";
+import EditorContext from "../editorContext";
 
 const ContentContainer = (props: {
   lines: string[];
@@ -12,7 +20,8 @@ const ContentContainer = (props: {
   onTextDelete?: (line: number, startOffset: number, endOffset: number) => void;
   onCaretsChange?: (carets: Caret[]) => void;
 }): ReactElement => {
-  const { lines, carets, onTextInsert, onCaretsChange } = props;
+  const { state, dispatch } = useContext(EditorContext);
+  const { lines, carets, onTextInsert, onTextDelete, onCaretsChange } = props;
   const linesViewRef = useRef<HTMLDivElement>(null);
   const measurerRef = useRef<HTMLDivElement>(null);
   const [caretMetrics] = useCaretMetrics(linesViewRef, measurerRef, carets);
@@ -83,6 +92,31 @@ const ContentContainer = (props: {
         };
   };
 
+  const handleTextAreaDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ): void => {
+    if (e.keyCode == KeyCode.DOM_VK_BACK_SPACE) {
+      const lastCaret = _.last(carets);
+      if (lastCaret) {
+        console.log(carets);
+        const range =
+          lastCaret.offset > 0
+            ? new TextRange(lastCaret.line, lastCaret.offset - 1)
+            : lastCaret.line > 0
+            ? new TextRange(
+                lastCaret.line - 1,
+                lines[lastCaret.line - 1].length
+              )
+            : new TextRange(0, 0);
+        dispatch?.({
+          type: "delete",
+          ranges: range,
+        });
+        console.log(carets);
+      }
+    }
+  };
+
   return (
     <div className="editor-content">
       <Lines
@@ -113,6 +147,7 @@ const ContentContainer = (props: {
         onCompositionUpdate={handleCompositionUpdate}
         onCompositionEnd={handleCompositionEnd}
         onCompositionStart={handleCompositionStart}
+        onKeyDown={handleTextAreaDown}
         style={{ ...calcCaretInputAreaPosition() }}
       />
     </div>

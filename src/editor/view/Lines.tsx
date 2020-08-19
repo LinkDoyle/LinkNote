@@ -40,8 +40,6 @@ export const useCaretMetrics = (
   carets: Caret[]
 ): [CaretMetric[], Dispatch<SetStateAction<CaretMetric[]>>] => {
   const [caretMetrics, setCaretMetrics] = useState<CaretMetric[]>([]);
-  console.log(carets);
-  console.log(caretMetrics);
 
   // update caretMetrics
   useEffect(() => {
