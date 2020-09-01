@@ -41,6 +41,7 @@
   position: absolute;
   top: 0;
   height: 100%;
+  width: 100%;
   font-weight: normal;
   font-size: 14px;
   font-feature-settings: "liga", "calt";
@@ -55,6 +56,7 @@
 
 .editor-text-measurer {
   visibility: hidden;
+  height: 0px;
 }
 
 .editor-caret {

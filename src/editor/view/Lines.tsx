@@ -156,25 +156,19 @@ function Lines(props: {
   };
 
   return (
-    <>
+    <div
+      className="editor-lines"
+      ref={linesRef}
+      onMouseDown={(e) => updateCaretsPositionWithMeasurer(e)}
+      onMouseMove={(e) => e.buttons & 1 && updateCaretsPositionWithMeasurer(e)}
+      onMouseUp={(e) => updateCaretsPositionWithMeasurer(e)}
+      onMouseLeave={(e) => e.buttons & 1 && updateCaretsPositionWithMeasurer(e)}
+    >
       <div className="editor-text-measurer" ref={measurerRef} />
-      <div
-        className="editor-lines"
-        ref={linesRef}
-        onMouseDown={(e) => updateCaretsPositionWithMeasurer(e)}
-        onMouseMove={(e) =>
-          e.buttons & 1 && updateCaretsPositionWithMeasurer(e)
-        }
-        onMouseUp={(e) => updateCaretsPositionWithMeasurer(e)}
-        onMouseLeave={(e) =>
-          e.buttons & 1 && updateCaretsPositionWithMeasurer(e)
-        }
-      >
-        {lines.map((value, index) => (
-          <Line key={index} line={value} />
-        ))}
-      </div>
-    </>
+      {lines.map((value, index) => (
+        <Line key={index} line={value} />
+      ))}
+    </div>
   );
 }
 
