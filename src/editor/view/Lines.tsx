@@ -94,6 +94,12 @@ const Line = (props: { line: string }): ReactElement => {
   );
 };
 
+enum SelectMode {
+  None,
+  SimpleSelect,
+  MultiSelect, // TODO
+}
+
 function Lines(props: {
   lines: string[];
   linesRef: RefObject<HTMLDivElement>;
@@ -101,10 +107,13 @@ function Lines(props: {
   onCaretsChange?: (carets: Caret[]) => void;
 }): ReactElement {
   const { lines, linesRef, measurerRef, onCaretsChange } = props;
+  const [selectMode, setSelectMode] = useState(SelectMode.None);
+
   const updateCaretsPositionWithMeasurer = (
-    event: React.MouseEvent<HTMLSpanElement | HTMLDivElement>
+    target: HTMLElement,
+    mousePosition: { clientX: number; clientY: number }
   ) => {
-    const target = event.target as HTMLElement;
+    const { clientX, clientY } = mousePosition;
     let span: HTMLSpanElement | null = null;
     let metricIndex = -1;
 
@@ -125,11 +134,42 @@ function Lines(props: {
       span = target;
     }
 
+    if (!span) {
+      const linesView = linesRef.current;
+      if (!linesView) {
+        return;
+      }
+      const lines = linesView.getElementsByClassName("editor-line");
+      let lineElement: HTMLDivElement | null = null;
+      if (clientY < lines[0].getBoundingClientRect().top) {
+        lineElement = lines[0] as HTMLDivElement;
+      } else {
+        for (const line of lines) {
+          const rect = line.getBoundingClientRect();
+          if (clientY > rect.top) {
+            lineElement = line as HTMLDivElement;
+          }
+          if (clientY < rect.bottom) {
+            break;
+          }
+        }
+      }
+      const isOnTheLeft = clientX < linesView.getBoundingClientRect().left;
+      if (lineElement) {
+        if (isOnTheLeft) {
+          metricIndex = 0;
+          span = lineElement.firstElementChild as HTMLSpanElement;
+        } else {
+          span = lineElement.lastElementChild as HTMLSpanElement;
+        }
+      }
+    }
+
     if (span) {
       const metricOffsets = measureElementText(measurerRef, span);
       if (metricIndex === -1) {
         const domRect = target.getBoundingClientRect();
-        const offsetX = Math.max(event.clientX - domRect.x, 0);
+        const offsetX = Math.max(mousePosition.clientX - domRect.x, 0);
         metricIndex = 0;
         for (let i = 0; i < metricOffsets.length; ++i) {
           if (metricOffsets[i] >= offsetX) {
@@ -155,14 +195,52 @@ function Lines(props: {
     }
   };
 
+  const handleMouseDown = (
+    e: React.MouseEvent<HTMLSpanElement | HTMLDivElement>
+  ) => {
+    if (e.buttons & 1) {
+      setSelectMode(SelectMode.SimpleSelect);
+    }
+    updateCaretsPositionWithMeasurer(e.target as HTMLElement, {
+      clientX: e.clientX,
+      clientY: e.clientY,
+    });
+    e.preventDefault(); // FIX `handleMouseUp` not working.
+  };
+
+  const handleMouseMoving = (e: MouseEvent) => {
+    if (selectMode == SelectMode.SimpleSelect) {
+      updateCaretsPositionWithMeasurer(e.target as HTMLElement, {
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
+    }
+  };
+
+  const handleMouseUp = (e: MouseEvent) => {
+    if (selectMode != SelectMode.None) {
+      updateCaretsPositionWithMeasurer(e.target as HTMLElement, {
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
+      setSelectMode(SelectMode.None);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMoving);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMoving);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  });
+
   return (
     <div
       className="editor-lines"
       ref={linesRef}
-      onMouseDown={(e) => updateCaretsPositionWithMeasurer(e)}
-      onMouseMove={(e) => e.buttons & 1 && updateCaretsPositionWithMeasurer(e)}
-      onMouseUp={(e) => updateCaretsPositionWithMeasurer(e)}
-      onMouseLeave={(e) => e.buttons & 1 && updateCaretsPositionWithMeasurer(e)}
+      onMouseDown={(e) => handleMouseDown(e)}
     >
       <div className="editor-text-measurer" ref={measurerRef} />
       {lines.map((value, index) => (
