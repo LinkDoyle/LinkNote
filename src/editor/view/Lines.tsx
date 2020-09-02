@@ -209,6 +209,9 @@ function Lines(props: {
   };
 
   const handleMouseMoving = (e: MouseEvent) => {
+    if ((e.target as HTMLElement).classList.contains("editor-input-textarea")) {
+      return;
+    }
     if (selectMode == SelectMode.SimpleSelect) {
       updateCaretsPositionWithMeasurer(e.target as HTMLElement, {
         clientX: e.clientX,
@@ -219,10 +222,6 @@ function Lines(props: {
 
   const handleMouseUp = (e: MouseEvent) => {
     if (selectMode != SelectMode.None) {
-      updateCaretsPositionWithMeasurer(e.target as HTMLElement, {
-        clientX: e.clientX,
-        clientY: e.clientY,
-      });
       setSelectMode(SelectMode.None);
     }
   };

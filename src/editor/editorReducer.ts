@@ -139,21 +139,22 @@ export type State = {
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "insert": {
+      const lineIndex = Math.max(action.line - 1, 0);
       const insertedLines = action.text.split(/\r?\n/);
-      const currentLine = state.lines[action.line];
+      const currentLine = state.lines[lineIndex];
       const startLine =
         currentLine.slice(0, action.offset) +
         insertedLines[0] +
         currentLine.slice(action.offset);
 
       const newLines = [
-        ...state.lines.slice(0, action.line),
+        ...state.lines.slice(0, lineIndex),
         startLine,
         ...insertedLines.slice(1),
-        ...state.lines.slice(action.line + 1),
+        ...state.lines.slice(lineIndex + 1),
       ];
 
-      const newCaretLine = action.line + insertedLines.length - 1;
+      const newCaretLine = lineIndex + insertedLines.length - 1;
       const newCaretOffset =
         insertedLines.length === 1
           ? action.offset + insertedLines[0].length
@@ -163,7 +164,7 @@ const reducer = (state: State, action: Action): State => {
         lineNumbers: _.range(1, newLines.length + 1),
         carets: [
           {
-            line: newCaretLine,
+            line: newCaretLine + 1,
             offset: newCaretOffset,
           },
         ],
