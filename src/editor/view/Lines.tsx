@@ -50,7 +50,7 @@ export const useCaretMetrics = (
     }
     const newCaretMetrics: CaretMetric[] = [];
     for (const caret of carets) {
-      const lineView = linesView.children[caret.line];
+      const lineView = linesView.children[caret.line + 1]; // FIXME: exclude the text measurer
       let restOffset = caret.offset;
       let spanElement: HTMLSpanElement | null = null;
       for (const element of lineView.children) {
@@ -181,7 +181,7 @@ function Lines(props: {
       const lineElement = span.parentElement;
       const spanIndex = _.indexOf(lineElement?.children, span);
       const linesElement = lineElement?.parentElement;
-      const lineIndex = _.indexOf(linesElement?.children, lineElement);
+      const lineIndex = _.indexOf(linesElement?.children, lineElement) - 1; // FIXME: exclude the text measurer
       const charOffset =
         _(lineElement?.children)
           .slice(0, spanIndex)

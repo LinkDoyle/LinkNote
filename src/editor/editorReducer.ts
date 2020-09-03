@@ -11,14 +11,14 @@ const initialLines = [
 ];
 
 export interface Caret {
-  line: number;
-  offset: number;
+  line: number; // start at 0
+  offset: number; // start at 0
 }
 
 export class TextRange {
-  private _startLine: number; // included
+  private _startLine: number; // included, start at 0
   private _endLine: number; // exclusive
-  private _startOffset: number; // included
+  private _startOffset: number; // included, start at 0
   private _endOffset: number; // exclusive
 
   constructor();

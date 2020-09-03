@@ -9,14 +9,23 @@ export interface CaretMetric {
   metricIndex: number;
 }
 
-function Carets(props: { caretMetrics: CaretMetric[] }): ReactElement {
-  const { caretMetrics } = props;
+function Carets(props: {
+  caretMetrics: CaretMetric[];
+  blink: boolean;
+}): ReactElement {
+  const { caretMetrics, blink } = props;
   const [cursorVisibility, setCursorVisibility] = useState<
     "visible" | "hidden"
   >("visible");
 
   useInterval(() => {
-    setCursorVisibility(cursorVisibility === "visible" ? "hidden" : "visible");
+    if (blink) {
+      setCursorVisibility(
+        cursorVisibility === "visible" ? "hidden" : "visible"
+      );
+    } else {
+      setCursorVisibility("visible");
+    }
   }, 500);
 
   return (

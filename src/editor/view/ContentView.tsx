@@ -26,6 +26,7 @@ const ContentContainer = (props: {
   const measurerRef = useRef<HTMLDivElement>(null);
   const [caretMetrics] = useCaretMetrics(linesViewRef, measurerRef, carets);
   const inputTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  const [caretBlink, setCaretBlink] = useState(true);
 
   useEffect(() => {
     inputTextAreaRef.current?.focus();
@@ -92,31 +93,118 @@ const ContentContainer = (props: {
         };
   };
 
-  const handleTextAreaDown = (
+  const handleTextAreaKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>
   ): void => {
-    if (e.keyCode == KeyCode.DOM_VK_BACK_SPACE) {
-      const lastCaret = _.last(carets);
-      if (lastCaret) {
-        console.log(carets);
-        const range =
-          lastCaret.offset > 0
-            ? new TextRange(lastCaret.line, lastCaret.offset - 1)
-            : lastCaret.line > 0
-            ? new TextRange(
-                lastCaret.line - 1,
-                lines[lastCaret.line - 1].length
-              )
-            : new TextRange(0, 0);
-        dispatch?.({
-          type: "delete",
-          ranges: range,
+    switch (e.keyCode) {
+      case KeyCode.DOM_VK_BACK_SPACE: {
+        const lastCaret = _.last(carets);
+        if (lastCaret) {
+          console.log(carets);
+          const range =
+            lastCaret.offset > 0
+              ? new TextRange(lastCaret.line, lastCaret.offset - 1)
+              : lastCaret.line > 0
+              ? new TextRange(
+                  lastCaret.line - 1,
+                  lines[lastCaret.line - 1].length
+                )
+              : new TextRange(0, 0);
+          dispatch?.({
+            type: "delete",
+            ranges: range,
+          });
+          console.log(carets);
+        }
+        break;
+      }
+      case KeyCode.DOM_VK_LEFT: {
+        setCaretBlink(false);
+        const lines = state.lines;
+        const carets = state.carets.map((c) =>
+          c.offset > 0
+            ? {
+                line: c.line,
+                offset: c.offset - 1,
+              }
+            : c.line > 0
+            ? {
+                line: c.line - 1,
+                offset: lines[c.line].length,
+              }
+            : {
+                line: 0,
+                offset: 0,
+              }
+        );
+        dispatch({ type: "updateCarets", carets: carets });
+        break;
+      }
+      case KeyCode.DOM_VK_RIGHT: {
+        setCaretBlink(false);
+        const lines = state.lines;
+        const carets = state.carets.map((c) =>
+          c.offset < lines[c.line].length
+            ? {
+                line: c.line,
+                offset: c.offset + 1,
+              }
+            : c.line < lines.length - 1
+            ? {
+                line: c.line + 1,
+                offset: 0,
+              }
+            : {
+                line: lines.length - 1,
+                offset: lines[lines.length - 1].length,
+              }
+        );
+        dispatch({ type: "updateCarets", carets: carets });
+        break;
+      }
+      case KeyCode.DOM_VK_UP: {
+        setCaretBlink(false);
+        const lines = state.lines;
+        const carets = state.carets.map((c) => {
+          const newLineIndex = Math.max(0, c.line - 1);
+          const newOffset = Math.min(lines[newLineIndex].length, c.offset);
+          return {
+            line: newLineIndex,
+            offset: newOffset,
+          };
         });
-        console.log(carets);
+        dispatch({ type: "updateCarets", carets: carets });
+        break;
+      }
+      case KeyCode.DOM_VK_DOWN: {
+        setCaretBlink(false);
+        const carets = state.carets.map((c) => {
+          const newLineIndex = Math.min(lines.length - 1, c.line + 1);
+          const newOffset = Math.min(lines[newLineIndex].length, c.offset);
+          return {
+            line: newLineIndex,
+            offset: newOffset,
+          };
+        });
+        dispatch({ type: "updateCarets", carets: carets });
+        break;
       }
     }
   };
 
+  const handleTextAreaKeyUp = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ): void => {
+    switch (e.keyCode) {
+      case KeyCode.DOM_VK_LEFT:
+      case KeyCode.DOM_VK_RIGHT:
+      case KeyCode.DOM_VK_UP:
+      case KeyCode.DOM_VK_DOWN: {
+        setCaretBlink(true);
+        break;
+      }
+    }
+  };
   return (
     <div className="editor-content">
       <Lines
@@ -134,7 +222,7 @@ const ContentContainer = (props: {
           );
         })}
       </DebugView>
-      <Carets caretMetrics={caretMetrics} />
+      <Carets caretMetrics={caretMetrics} blink={caretBlink} />
       <textarea
         ref={inputTextAreaRef}
         className="editor-input-textarea"
@@ -147,7 +235,8 @@ const ContentContainer = (props: {
         onCompositionUpdate={handleCompositionUpdate}
         onCompositionEnd={handleCompositionEnd}
         onCompositionStart={handleCompositionStart}
-        onKeyDown={handleTextAreaDown}
+        onKeyDown={handleTextAreaKeyDown}
+        onKeyUp={handleTextAreaKeyUp}
         style={{ ...calcCaretInputAreaPosition() }}
       />
     </div>

@@ -76,11 +76,12 @@
   line-height: 19px;
   color: transparent;
   border: none;
-  background-color: rgba(193, 61, 211, 0.5);
+  background-color: rgba(193, 61, 211, 0);
+  /* visibility: hidden; */
   /* width: 1px; */
   /* height: 1px; */
   /* dev */
-  width: 5px;
+  width: 1px;
   /* dev */
   height: 19px;
   /* background-color: transparent; */
