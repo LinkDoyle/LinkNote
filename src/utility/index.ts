@@ -115,3 +115,10 @@ export enum KeyCode {
   DOM_VK_QUOTE = 222,
   DOM_VK_META = 224,
 }
+
+export class NotImplementedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotImplementedError";
+  }
+}
