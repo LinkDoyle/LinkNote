@@ -95,38 +95,35 @@ export class TextRange {
   }
 }
 
-enum ActionType {
-  INSERT = "insert",
-  DELETE = "delete",
-  REPLACE_RANGE = "replace",
-  REPLACE_TEXT = "replaceText",
-  REPLACE_REGEX = "replaceRegex",
-  GET_SELECTION = "getSelection",
-  ADD_SELECTION = "addSelection",
-  REMOVE_SELECTION = "removeSelection",
-}
-
-export type Action = InsertAction | DeleteAction | UpdateCaretsAction;
+export const INSERT_TEXT = "insertText";
+export const DELETE_TEXT = "deleteText";
+export const REPLACE_RANGE = "replaceRange";
+export const REPLACE_TEXT = "replaceText";
+export const REPLACE_REGEX = "replaceRegex";
+export const GET_SELECTION = "getSelection";
+export const ADD_SELECTION = "addSelection";
+export const REMOVE_SELECTION = "removeSelection";
+export const UPDATE_CARETS = "updateCarets";
 
 interface InsertAction {
-  type: "insert";
+  type: typeof INSERT_TEXT;
   line: number;
   offset: number;
   text: string;
 }
 
 interface DeleteAction {
-  type: "delete";
+  type: typeof DELETE_TEXT;
   ranges: TextRange | TextRange[];
 }
 
 interface ReplaceAction {
-  type: ActionType.REPLACE_RANGE;
+  type: typeof REPLACE_RANGE;
   ranges: TextRange | TextRange[];
   text: string;
 }
 interface UpdateCaretsAction {
-  type: "updateCarets";
+  type: typeof UPDATE_CARETS;
   carets: Caret[];
 }
 
@@ -136,9 +133,11 @@ export type State = {
   carets: Caret[];
 };
 
+export type Action = InsertAction | DeleteAction | UpdateCaretsAction;
+
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
-    case "insert": {
+    case INSERT_TEXT: {
       const lineIndex = Math.max(action.line - 1, 0);
       const insertedLines = action.text.split(/\r?\n/);
       const currentLine = state.lines[lineIndex];
@@ -170,7 +169,7 @@ const reducer = (state: State, action: Action): State => {
         ],
       };
     }
-    case "delete": {
+    case DELETE_TEXT: {
       const ranges: TextRange[] =
         action.ranges instanceof TextRange ? [action.ranges] : action.ranges;
       let lines = state.lines;
@@ -210,7 +209,7 @@ const reducer = (state: State, action: Action): State => {
         lines,
       };
     }
-    case "updateCarets": {
+    case UPDATE_CARETS: {
       return {
         ...state,
         carets: [...action.carets],

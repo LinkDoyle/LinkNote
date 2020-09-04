@@ -1,11 +1,13 @@
-import React, { ReactElement } from "react";
+import React, { ReactElement, useContext } from "react";
+import EditorContext from "../editorContext";
 
-const LineNumberContainer = (props: {
-  lineNumbers: number[];
-}): ReactElement => {
+const LineNumberContainer = (): ReactElement => {
+  const { state } = useContext(EditorContext);
+  const { lineNumbers } = state;
+
   return (
     <div className="editor-line-numbers">
-      {props.lineNumbers.map((value, index) => {
+      {lineNumbers.map((value, index) => {
         return (
           <div className="editor-line-number" key={index}>
             {value}

@@ -1,15 +1,16 @@
 import React, {
   ReactElement,
-  useRef,
   RefObject,
   Dispatch,
   SetStateAction,
   useState,
   useEffect,
+  useContext,
 } from "react";
 import _ from "lodash";
-import { Caret } from "../editorReducer";
+import { Caret, UPDATE_CARETS } from "../editorReducer";
 import { CaretMetric } from "./Carets";
+import EditorContext from "../editorContext";
 
 const measureElementText = (
   measurerRef: RefObject<HTMLDivElement | undefined>,
@@ -101,12 +102,13 @@ enum SelectMode {
 }
 
 function Lines(props: {
-  lines: string[];
   linesRef: RefObject<HTMLDivElement>;
   measurerRef: RefObject<HTMLDivElement>;
-  onCaretsChange?: (carets: Caret[]) => void;
 }): ReactElement {
-  const { lines, linesRef, measurerRef, onCaretsChange } = props;
+  const { state, dispatch } = useContext(EditorContext);
+  const { lines } = state;
+
+  const { linesRef, measurerRef } = props;
   const [selectMode, setSelectMode] = useState(SelectMode.None);
 
   const updateCaretsPositionWithMeasurer = (
@@ -186,12 +188,8 @@ function Lines(props: {
         _(lineElement?.children)
           .slice(0, spanIndex)
           .sumBy((e) => e.textContent?.length ?? 0) + metricIndex;
-      onCaretsChange?.([
-        {
-          line: lineIndex,
-          offset: charOffset,
-        },
-      ]);
+      const caret = { line: lineIndex, offset: charOffset };
+      dispatch({ type: UPDATE_CARETS, carets: [caret] });
     }
   };
 

@@ -6,22 +6,22 @@ import React, {
   useContext,
 } from "react";
 import _ from "lodash";
-import { Caret, TextRange } from "../editorReducer";
+import {
+  TextRange,
+  INSERT_TEXT,
+  DELETE_TEXT,
+  UPDATE_CARETS,
+} from "../editorReducer";
 import DebugView from "./DebugView";
 import Carets from "./Carets";
 import Lines, { useCaretMetrics } from "./Lines";
 import { KeyCode } from "../../utility";
 import EditorContext from "../editorContext";
 
-const ContentContainer = (props: {
-  lines: string[];
-  carets: Caret[];
-  onTextInsert?: (line: number, offset: number, text: string) => void;
-  onTextDelete?: (line: number, startOffset: number, endOffset: number) => void;
-  onCaretsChange?: (carets: Caret[]) => void;
-}): ReactElement => {
+const ContentContainer = (): ReactElement => {
   const { state, dispatch } = useContext(EditorContext);
-  const { lines, carets, onTextInsert, onTextDelete, onCaretsChange } = props;
+  const { lines, carets } = state;
+
   const linesViewRef = useRef<HTMLDivElement>(null);
   const measurerRef = useRef<HTMLDivElement>(null);
   const [caretMetrics] = useCaretMetrics(linesViewRef, measurerRef, carets);
@@ -67,7 +67,12 @@ const ContentContainer = (props: {
     console.log(lastCaret);
     if (lastCaret) {
       console.log(carets);
-      onTextInsert?.(lastCaret.line, lastCaret.offset, insertedText);
+      dispatch({
+        type: INSERT_TEXT,
+        line: lastCaret.line,
+        offset: lastCaret.offset,
+        text: insertedText,
+      });
       console.log(carets);
     }
   };
@@ -110,8 +115,8 @@ const ContentContainer = (props: {
                   lines[lastCaret.line - 1].length
                 )
               : new TextRange(0, 0);
-          dispatch?.({
-            type: "delete",
+          dispatch({
+            type: DELETE_TEXT,
             ranges: range,
           });
           console.log(carets);
@@ -137,7 +142,7 @@ const ContentContainer = (props: {
                 offset: 0,
               }
         );
-        dispatch({ type: "updateCarets", carets: carets });
+        dispatch({ type: UPDATE_CARETS, carets: carets });
         break;
       }
       case KeyCode.DOM_VK_RIGHT: {
@@ -159,7 +164,7 @@ const ContentContainer = (props: {
                 offset: lines[lines.length - 1].length,
               }
         );
-        dispatch({ type: "updateCarets", carets: carets });
+        dispatch({ type: UPDATE_CARETS, carets: carets });
         break;
       }
       case KeyCode.DOM_VK_UP: {
@@ -173,7 +178,7 @@ const ContentContainer = (props: {
             offset: newOffset,
           };
         });
-        dispatch({ type: "updateCarets", carets: carets });
+        dispatch({ type: UPDATE_CARETS, carets: carets });
         break;
       }
       case KeyCode.DOM_VK_DOWN: {
@@ -186,7 +191,7 @@ const ContentContainer = (props: {
             offset: newOffset,
           };
         });
-        dispatch({ type: "updateCarets", carets: carets });
+        dispatch({ type: UPDATE_CARETS, carets: carets });
         break;
       }
     }
@@ -207,12 +212,7 @@ const ContentContainer = (props: {
   };
   return (
     <div className="editor-content">
-      <Lines
-        lines={lines}
-        linesRef={linesViewRef}
-        measurerRef={measurerRef}
-        onCaretsChange={onCaretsChange}
-      />
+      <Lines linesRef={linesViewRef} measurerRef={measurerRef} />
       <DebugView>
         {carets.map((c, i) => {
           return (

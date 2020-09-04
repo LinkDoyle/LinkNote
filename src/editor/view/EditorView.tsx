@@ -12,17 +12,8 @@ function EditorView(): ReactElement {
   return (
     <EditorContext.Provider value={{ state: state, dispatch: dispatch }}>
       <div className="editor-container">
-        <LineNumberContainer lineNumbers={state.lineNumbers} />
-        <ContentContainer
-          lines={state.lines}
-          carets={state.carets}
-          onTextInsert={(line, offset, text) =>
-            dispatch({ type: "insert", line, offset, text })
-          }
-          onCaretsChange={(carets) =>
-            dispatch({ type: "updateCarets", carets: carets })
-          }
-        />
+        <LineNumberContainer />
+        <ContentContainer />
       </div>
     </EditorContext.Provider>
   );
