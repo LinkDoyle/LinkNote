@@ -35,7 +35,7 @@ export class Parser {
    * parse
    */
   public parse(markdown: string): Document {
-    let document = new Document();
+    const document = new Document();
 
     return document;
   }

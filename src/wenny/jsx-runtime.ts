@@ -20,6 +20,9 @@ export function jsx(
   return element;
 }
 
-export function jsxs(tag: string | (() => Wenny.Element), props: {}) {
+export function jsxs(
+  tag: string | (() => Wenny.Element),
+  props: Props
+): Wenny.Element {
   return jsx(tag, props);
 }

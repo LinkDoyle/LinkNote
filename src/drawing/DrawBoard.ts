@@ -11,8 +11,8 @@ interface Command {
    * draw
    */
   execute(ctx: CanvasRenderingContext2D): void;
-  save(): object;
-  load(state: object): void;
+  save(): unknown;
+  load(state: unknown): void;
 }
 
 class PenCommand implements Command {
@@ -53,11 +53,11 @@ class PenCommand implements Command {
     ctx.restore();
   }
 
-  save(): object {
+  save(): unknown {
     throw new Error("Method not implemented.");
   }
 
-  load(state: object) {
+  load(state: unknown) {
     const { lineWidth, color, track } = state as {
       lineWidth: number;
       color: string;
@@ -71,10 +71,10 @@ class TextCommand implements Command {
   execute(ctx: CanvasRenderingContext2D): void {
     throw new Error("Method not implemented.");
   }
-  save(): object {
+  save(): unknown {
     throw new Error("Method not implemented.");
   }
-  load(state: object): void {
+  load(state: unknown): void {
     throw new Error("Method not implemented.");
   }
 }
@@ -83,10 +83,10 @@ class ImageCommand implements Command {
   execute(ctx: CanvasRenderingContext2D): void {
     throw new Error("Method not implemented.");
   }
-  save(): object {
+  save(): unknown {
     throw new Error("Method not implemented.");
   }
-  load(state: object): void {
+  load(state: unknown): void {
     throw new Error("Method not implemented.");
   }
 }
@@ -95,10 +95,10 @@ class ClearCommand implements Command {
   execute(ctx: CanvasRenderingContext2D): void {
     ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
-  save(): object {
+  save(): unknown {
     throw new Error("Method not implemented.");
   }
-  load(state: object): void {
+  load(state: unknown): void {
     throw new Error("Method not implemented.");
   }
 }
@@ -152,11 +152,11 @@ export class DrawBoard {
   private _currentPointerId?: number;
 
   private _history: Command[] = [];
-  private _historyCurrentIndex: number = -1;
+  private _historyCurrentIndex = -1;
   /**
    * record
    */
-  private record(command: Command) {
+  private record(command: Command): void {
     this._history[++this._historyCurrentIndex] = command;
     // erase history after current index
     this._history.length = this._historyCurrentIndex + 1;
@@ -167,7 +167,7 @@ export class DrawBoard {
   /**
    * undo
    */
-  private replay() {
+  private replay(): void {
     const ctx = this._canvas.getContext("2d");
     if (ctx) {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -181,7 +181,7 @@ export class DrawBoard {
   /**
    * undo
    */
-  public undo() {
+  public undo(): void {
     if (this._historyCurrentIndex >= 0) {
       this._historyCurrentIndex -= 1;
     }
@@ -193,7 +193,7 @@ export class DrawBoard {
   /**
    * redo
    */
-  public redo() {
+  public redo(): void {
     if (this._historyCurrentIndex < this._history.length) {
       this._historyCurrentIndex += 1;
     }
@@ -449,7 +449,7 @@ button: ${ev.button}, buttons: ${ev.buttons}`
   /**
    * clear
    */
-  public clear() {
+  public clear(): void {
     const ctx = this._canvas.getContext("2d");
     ctx?.clearRect(0, 0, this._canvas.width, this._canvas.height);
     this.record(new ClearCommand());

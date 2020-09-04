@@ -5,6 +5,6 @@ declare module "*.html" {
 
 declare namespace JSX {
   interface IntrinsicElements {
-    [elementName: string]: any;
+    [elementName: string]: unknown;
   }
 }

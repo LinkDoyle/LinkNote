@@ -1,32 +1,31 @@
-namespace Wenny {
-  export interface Element {
-    tag: string;
-    props: {
-      children?: Element[];
-      [name: string]: any;
-    };
-  }
-
-  export function createElement(
-    type: string,
-    props?: any,
-    ...children: Element[]
-  ): Element {
-    let element: Element = {
-      tag: type,
-      props: {
-        children: children,
-      },
-    };
-
-    return element;
-  }
-
-  export abstract class Component<P = {}, S = {}> {
-    private _props: P | {} = {};
-    private _state: S | {} = {};
-    abstract render(): Node | JSX.IntrinsicElements;
-  }
+export interface Element {
+  tag: string;
+  props: {
+    children?: Element[];
+    [name: string]: unknown;
+  };
 }
 
-export default Wenny;
+export function createElement(
+  type: string,
+  props?: unknown,
+  ...children: Element[]
+): Element {
+  const element: Element = {
+    tag: type,
+    props: {
+      children: children,
+    },
+  };
+
+  return element;
+}
+
+export abstract class Component<
+  P = Record<string, unknown>,
+  S = Record<string, unknown>
+> {
+  private _props: P | Record<string, unknown> = {};
+  private _state: S | Record<string, unknown> = {};
+  abstract render(): Node | JSX.IntrinsicElements;
+}
