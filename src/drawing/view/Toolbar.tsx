@@ -1,9 +1,22 @@
-import React, { ReactElement, useContext } from "react";
+import React, { ReactElement } from "react";
 import "./DrawBoard.css";
-import DrawBoardContext, { UNDO, REDO, CLEAR } from "../DrawBoardContext";
+import { useSelector } from "react-redux";
+import { RootState } from "../../reducers";
 
-export default function ToolBar(): ReactElement {
-  const { state, dispatch } = useContext(DrawBoardContext);
+interface ToolBarProps {
+  onUndoClick?: () => void;
+  onRedoClick?: () => void;
+  onClearClick?: () => void;
+}
+
+export default function ToolBar({
+  onUndoClick,
+  onRedoClick,
+  onClearClick,
+}: ToolBarProps): ReactElement {
+  const { cmdUndoAvailable, cmdRedoAvailable } = useSelector(
+    (state: RootState) => state.drawing.history
+  );
 
   const handlePenClick = (): void => {
     // TODO
@@ -24,15 +37,6 @@ export default function ToolBar(): ReactElement {
   const handleLineWidthClick = (): void => {
     // TODO
   };
-  const handleUndoClick = (): void => {
-    dispatch({ type: UNDO });
-  };
-  const handleRedoClick = (): void => {
-    dispatch({ type: REDO });
-  };
-  const handleClearClick = (): void => {
-    dispatch({ type: CLEAR });
-  };
 
   return (
     <div className="drawboard-toolbar">
@@ -42,6 +46,7 @@ export default function ToolBar(): ReactElement {
         id="drawboard-pen"
         className="drawboard-radio drawboard-pen"
         defaultChecked={true}
+        onClick={() => handlePenClick()}
       />
       <label htmlFor="drawboard-pen">Pen</label>
       <input
@@ -49,6 +54,7 @@ export default function ToolBar(): ReactElement {
         name="drawboard-mode"
         id="drawboard-insert"
         className="drawboard-radio drawboard-insert"
+        onClick={() => handleInsertClick()}
       />
       <label htmlFor="drawboard-insert">Insert</label>
       <input
@@ -56,6 +62,7 @@ export default function ToolBar(): ReactElement {
         name="drawboard-mode"
         id="drawboard-select"
         className="drawboard-radio drawboard-select"
+        onClick={() => handleSelectClick()}
       />
       <label htmlFor="drawboard-select">Select</label>
       <input
@@ -63,37 +70,38 @@ export default function ToolBar(): ReactElement {
         name="drawboard-mode"
         id="drawboard-erase"
         className="drawboard-radio drawboard-erase"
+        onClick={() => handleEraseClick()}
       />
       <label htmlFor="drawboard-erase">Erase</label>
       <button
         className="drawboard-button drawboard-color"
-        onClick={handleColorClick}
+        onClick={() => handleColorClick()}
       >
         Color
       </button>
       <button
         className="drawboard-button drawboard-linewidth"
-        onClick={handleLineWidthClick}
+        onClick={() => handleLineWidthClick()}
       >
         LineWidth
       </button>
       <button
         className="drawboard-button drawboard-undo"
-        onClick={handleUndoClick}
-        disabled={!state.history.cmdUndoAvailable}
+        onClick={() => onUndoClick?.()}
+        disabled={!cmdUndoAvailable}
       >
         Undo
       </button>
       <button
         className="drawboard-button drawboard-redo"
-        onClick={handleRedoClick}
-        disabled={!state.history.cmdRedoAvailable}
+        onClick={() => onRedoClick?.()}
+        disabled={!cmdRedoAvailable}
       >
         Redo
       </button>
       <button
         className="drawboard-button drawboard-clear"
-        onClick={handleClearClick}
+        onClick={() => onClearClick?.()}
       >
         Clear
       </button>
