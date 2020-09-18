@@ -1,4 +1,10 @@
-import React, { ReactElement, useEffect, useRef, useState } from "react";
+import React, {
+  ReactElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import "./DrawBoard.css";
 
 import { useSelector, useDispatch } from "react-redux";
@@ -98,7 +104,7 @@ function DrawBoard(): ReactElement {
     setCurrentTracks([]);
   };
 
-  const redraw = (): void => {
+  const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -114,7 +120,7 @@ function DrawBoard(): ReactElement {
       const command = commands[i];
       drawer.execute(command);
     }
-  };
+  }, [drawer, history]);
 
   const handleUndoClick = (): void => {
     dispatch(undo());
@@ -141,7 +147,7 @@ function DrawBoard(): ReactElement {
 
   useEffect(() => {
     redraw();
-  }, [history.currentIndex]);
+  }, [redraw]);
 
   return (
     <div className="drawboard-container">
