@@ -1,7 +1,7 @@
 import { ReactElement, useState } from "react";
 
 import React from "react";
-import { useInterval } from "../hooks";
+import { useInterval } from "../../utility";
 
 export interface CaretMetric {
   focusElement: HTMLElement;
