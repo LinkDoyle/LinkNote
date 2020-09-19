@@ -5,12 +5,12 @@ import React, {
   SetStateAction,
   useState,
   useEffect,
-  useContext,
 } from "react";
 import _ from "lodash";
-import { Caret, UPDATE_CARETS } from "../editorReducer";
 import { CaretMetric } from "./Carets";
-import EditorContext from "../editorContext";
+import { Caret, setCaret } from "../editorSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../reducers";
 
 const measureElementText = (
   measurerRef: RefObject<HTMLDivElement | undefined>,
@@ -52,7 +52,7 @@ export const useCaretMetrics = (
     const newCaretMetrics: CaretMetric[] = [];
     for (const caret of carets) {
       const lineView = linesView.children[caret.line + 1]; // FIXME: exclude the text measurer
-      let restOffset = caret.offset;
+      let restOffset = caret.column;
       let spanElement: HTMLSpanElement | null = null;
       for (const element of lineView.children) {
         if (!(element instanceof HTMLSpanElement)) {
@@ -105,8 +105,8 @@ function Lines(props: {
   linesRef: RefObject<HTMLDivElement>;
   measurerRef: RefObject<HTMLDivElement>;
 }): ReactElement {
-  const { state, dispatch } = useContext(EditorContext);
-  const { lines } = state;
+  const dispatch = useDispatch();
+  const lines = useSelector((state: RootState) => state.editor.lines);
 
   const { linesRef, measurerRef } = props;
   const [selectMode, setSelectMode] = useState(SelectMode.None);
@@ -188,8 +188,8 @@ function Lines(props: {
         _(lineElement?.children)
           .slice(0, spanIndex)
           .sumBy((e) => e.textContent?.length ?? 0) + metricIndex;
-      const caret = { line: lineIndex, offset: charOffset };
-      dispatch({ type: UPDATE_CARETS, carets: [caret] });
+      const caret = { line: lineIndex, column: charOffset };
+      dispatch(setCaret(caret));
     }
   };
 

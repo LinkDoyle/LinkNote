@@ -1,26 +1,32 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  ReactElement,
-  useContext,
-} from "react";
+import React, { useState, useRef, useEffect, ReactElement } from "react";
 import _ from "lodash";
-import {
-  TextRange,
-  INSERT_TEXT,
-  DELETE_TEXT,
-  UPDATE_CARETS,
-} from "../editorReducer";
 import DebugView from "./DebugView";
 import Carets from "./Carets";
 import Lines, { useCaretMetrics } from "./Lines";
 import { KeyCode } from "../../utility";
-import EditorContext from "../editorContext";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../reducers";
+import {
+  createTextRange,
+  deleteText,
+  insertText,
+  setCaret,
+} from "../editorSlice";
+import { createSelector } from "@reduxjs/toolkit";
+
+const selectCarets = createSelector(
+  (state: RootState) => state.editor.selections,
+  (selections) =>
+    selections.map((s) => ({
+      line: s.endLine,
+      column: s.endColumn,
+    }))
+);
 
 const ContentContainer = (): ReactElement => {
-  const { state, dispatch } = useContext(EditorContext);
-  const { lines, carets } = state;
+  const dispatch = useDispatch();
+  const carets = useSelector(selectCarets);
+  const lines = useSelector((state: RootState) => state.editor.lines);
 
   const linesViewRef = useRef<HTMLDivElement>(null);
   const measurerRef = useRef<HTMLDivElement>(null);
@@ -30,7 +36,7 @@ const ContentContainer = (): ReactElement => {
 
   useEffect(() => {
     inputTextAreaRef.current?.focus();
-  });
+  }, [inputTextAreaRef]);
 
   const [isCompositionMode, setCompositionMode] = useState(false);
   const handleCompositionStart = (
@@ -40,9 +46,7 @@ const ContentContainer = (): ReactElement => {
     setCompositionMode(true);
   };
 
-  const handleCompositionUpdate = (
-    event: React.CompositionEvent<HTMLTextAreaElement>
-  ) => {
+  const handleCompositionUpdate = () => {
     // TODO: show characters
   };
 
@@ -67,12 +71,13 @@ const ContentContainer = (): ReactElement => {
     console.log(lastCaret);
     if (lastCaret) {
       console.log(carets);
-      dispatch({
-        type: INSERT_TEXT,
-        line: lastCaret.line,
-        offset: lastCaret.offset,
-        text: insertedText,
-      });
+      dispatch(
+        insertText({
+          line: lastCaret.line,
+          column: lastCaret.column,
+          text: insertedText,
+        })
+      );
       console.log(carets);
     }
   };
@@ -107,91 +112,85 @@ const ContentContainer = (): ReactElement => {
         if (lastCaret) {
           console.log(carets);
           const range =
-            lastCaret.offset > 0
-              ? new TextRange(lastCaret.line, lastCaret.offset - 1)
+            lastCaret.column > 0
+              ? createTextRange(lastCaret.line, lastCaret.column - 1)
               : lastCaret.line > 0
-              ? new TextRange(
+              ? createTextRange(
                   lastCaret.line - 1,
                   lines[lastCaret.line - 1].length
                 )
-              : new TextRange(0, 0);
-          dispatch({
-            type: DELETE_TEXT,
-            ranges: range,
-          });
+              : createTextRange(0, 0);
+          dispatch(deleteText(range));
           console.log(carets);
         }
         break;
       }
       case KeyCode.DOM_VK_LEFT: {
         setCaretBlink(false);
-        const lines = state.lines;
-        const carets = state.carets.map((c) =>
-          c.offset > 0
+        const newCarets = carets.map((c) =>
+          c.column > 0
             ? {
                 line: c.line,
-                offset: c.offset - 1,
+                column: c.column - 1,
               }
             : c.line > 0
             ? {
                 line: c.line - 1,
-                offset: lines[c.line].length,
+                column: lines[c.line].length,
               }
             : {
                 line: 0,
-                offset: 0,
+                column: 0,
               }
         );
-        dispatch({ type: UPDATE_CARETS, carets: carets });
+        dispatch(setCaret(newCarets));
         break;
       }
       case KeyCode.DOM_VK_RIGHT: {
         setCaretBlink(false);
-        const lines = state.lines;
-        const carets = state.carets.map((c) =>
-          c.offset < lines[c.line].length
+        const newCarets = carets.map((c) =>
+          c.column < lines[c.line].length
             ? {
                 line: c.line,
-                offset: c.offset + 1,
+                column: c.column + 1,
               }
             : c.line < lines.length - 1
             ? {
                 line: c.line + 1,
-                offset: 0,
+                column: 0,
               }
             : {
                 line: lines.length - 1,
-                offset: lines[lines.length - 1].length,
+                column: lines[lines.length - 1].length,
               }
         );
-        dispatch({ type: UPDATE_CARETS, carets: carets });
+        dispatch(setCaret(newCarets));
         break;
       }
       case KeyCode.DOM_VK_UP: {
         setCaretBlink(false);
-        const lines = state.lines;
-        const carets = state.carets.map((c) => {
+        const newCarets = carets.map((c) => {
           const newLineIndex = Math.max(0, c.line - 1);
-          const newOffset = Math.min(lines[newLineIndex].length, c.offset);
+          const newOffset = Math.min(lines[newLineIndex].length, c.column);
           return {
             line: newLineIndex,
-            offset: newOffset,
+            column: newOffset,
           };
         });
-        dispatch({ type: UPDATE_CARETS, carets: carets });
+        dispatch(setCaret(newCarets));
         break;
       }
       case KeyCode.DOM_VK_DOWN: {
         setCaretBlink(false);
-        const carets = state.carets.map((c) => {
+        const newCarets = carets.map((c) => {
           const newLineIndex = Math.min(lines.length - 1, c.line + 1);
-          const newOffset = Math.min(lines[newLineIndex].length, c.offset);
+          const newOffset = Math.min(lines[newLineIndex].length, c.column);
           return {
             line: newLineIndex,
-            offset: newOffset,
+            column: newOffset,
           };
         });
-        dispatch({ type: UPDATE_CARETS, carets: carets });
+        dispatch(setCaret(newCarets));
         break;
       }
     }
@@ -217,7 +216,7 @@ const ContentContainer = (): ReactElement => {
         {carets.map((c, i) => {
           return (
             <span key={i}>
-              line: {c.line}, offset: {c.offset}{" "}
+              line: {c.line}, offset: {c.column}{" "}
             </span>
           );
         })}

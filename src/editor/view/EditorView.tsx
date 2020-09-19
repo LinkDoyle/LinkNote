@@ -2,20 +2,21 @@ import React, { ReactElement } from "react";
 import "../editor.css";
 
 import ContentContainer from "./ContentView";
-import { useTextAreaReducer } from "../editorReducer";
 import LineNumberContainer from "./LineNumbers";
-import EditorContext from "../editorContext";
+import { useSelector } from "react-redux";
+import { RootState } from "../../reducers";
+import _ from "lodash";
 
 function EditorView(): ReactElement {
-  const [state, dispatch] = useTextAreaReducer();
-
+  const lineNumbers = useSelector((state: RootState) => {
+    const { begin, end } = state.editor.viewLineRange;
+    return _.range(begin + 1, end + 1);
+  });
   return (
-    <EditorContext.Provider value={{ state: state, dispatch: dispatch }}>
-      <div className="editor-container">
-        <LineNumberContainer />
-        <ContentContainer />
-      </div>
-    </EditorContext.Provider>
+    <div className="editor-container">
+      <LineNumberContainer lineNumbers={lineNumbers} />
+      <ContentContainer />
+    </div>
   );
 }
 
